@@ -17,6 +17,7 @@
 :root[data-theme="dark"]{
   --bg:#0a1620; --panel:#102331; --ink:#e6f0f6; --muted:#8fa6b6; --line:#1f3a4d;
   --sea:#4fb3e8; --sea-soft:#14354a; --sun:#f6c13d; --sun-ink:#2a1d00; --good:#4cc790; --warn:#f0a43c; color-scheme:dark}
+[hidden]{display:none!important}
 *{box-sizing:border-box}
 body{background:var(--bg);color:var(--ink);font:15px/1.5 var(--body);
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 40px}
@@ -440,7 +441,7 @@ async function renderTwinVideo(script,box){
     throw new Error("Still rendering after 15 minutes. Check your HeyGen videos page.");
   }catch(e){box.innerHTML=`<div class="rendering err">Video failed: ${esc(e.message)}</div>`}
 }
-$("#lockForm").onsubmit=e=>{e.preventDefault();setCode($("#lockCode").value.trim());$("#lock").hidden=true;loadTwin()};
+$("#lockForm").onsubmit=e=>{e.preventDefault();const c=$("#lockCode").value.trim();if(!c){$("#lockMsg").textContent="Enter your access code.";return}setCode(c);$("#lock").hidden=true;loadTwin()};
 if(getCode())loadTwin();else showLock("");
 document.addEventListener("keydown",e=>{if((e.metaKey||e.ctrlKey)&&["1","2","3"].includes(e.key)){e.preventDefault();show(views[+e.key-1])}});
 </script>
