@@ -317,7 +317,7 @@ function copyFor(p){
   const n=p.name,b=p.brand,pr=p.price;
   const first=p.desc.split(/[.!]/)[0].trim();
   const T={
-    friendly:{h:[`Meet your new ${n.split(" ").slice(-2).join(" ").toLowerCase()}`,`Made for the way you live`,`Ready when you are`],cta:"Learn more"},
+    friendly:{h:[`Meet the ${n.split(/ [-–|] /)[0].split(" ").slice(0,4).join(" ")}`,`Made for the way you live`,`Ready when you are`],cta:"Learn more"},
     bold:{h:[`No rust. No fuss.`,`Built tougher. Built here.`,`Stop settling.`],cta:"Shop now"},
     premium:{h:[`Engineered to last decades`,`Quality you can feel`,`The one serious owners choose`],cta:"See details"},
     urgent:{h:[`This week only`,`Last few in stock`,`Don't miss the launch price`],cta:"Get offer"}
@@ -437,14 +437,14 @@ async function drawAd(cv,i){const L=state.lastAds;if(!L)return;const {p,ads}=L;c
   const img=await loadAdImg(state.photo);const D='"Bricolage Grotesque", sans-serif';const M=72;const safeTop=story?200:0,safeBot=story?260:0;
   const brand=(p.brand||"").toUpperCase(),head=a.headline,price=p.price||"",cta=(a.cta||"Learn more").toUpperCase();
   if(i%3===0){ // full-bleed photo with overlay
-    if(img)cover(ctx,img,0,0,W,H);else pattern(ctx,W,H,200);
+    if(img){if(isCutout(img)){placePhoto(ctx,img,0,0,W,Math.round(H*0.66));ctx.fillStyle=AD_COL.paper;ctx.fillRect(0,Math.round(H*0.66),W,H)}else cover(ctx,img,0,0,W,H)}else pattern(ctx,W,H,200);
     const g=ctx.createLinearGradient(0,H*0.38,0,H);g.addColorStop(0,"rgba(6,38,58,0)");g.addColorStop(1,"rgba(6,38,58,.94)");ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
     pill(ctx,brand,M,M+safeTop,30,"rgba(0,0,0,.45)",AD_COL.white);
     const t=wrap(ctx,head,W-M*2,118,3,800,D);ctx.fillStyle=AD_COL.white;const lh=t.size*1.02;let y=H-M-safeBot-150-(t.lines.length-1)*lh;t.lines.forEach((l,k)=>{ctx.fillText(l,M,y+k*lh)});
     const by=H-M-safeBot-96;let x=M;if(price){x+=pill(ctx,price,x,by,40,AD_COL.sun,AD_COL.sunInk).w+20}pill(ctx,cta+"  →",x,by,40,AD_COL.white,AD_COL.deep);
   }else if(i%3===1){ // split: photo top, panel bottom
     const ph=Math.round(H*0.6);ctx.fillStyle=AD_COL.paper;ctx.fillRect(0,0,W,ph);
-    if(img)cover(ctx,img,0,0,W,ph);else pattern(ctx,W,ph,165);
+    if(img)placePhoto(ctx,img,0,0,W,ph);else pattern(ctx,W,ph,165);
     ctx.fillStyle=AD_COL.ocean;ctx.fillRect(0,ph,W,H-ph);ctx.fillStyle=AD_COL.sun;ctx.fillRect(0,ph,W,14);
     if(price){ctx.save();ctx.translate(W-M,ph-60);pill(ctx,price,0,0,46,AD_COL.sun,AD_COL.sunInk,"right");ctx.restore()}
     ctx.fillStyle="rgba(255,255,255,.7)";ctx.font="700 30px Figtree, sans-serif";ctx.fillText(brand,M,ph+M+20);
@@ -461,6 +461,8 @@ async function drawAd(cv,i){const L=state.lastAds;if(!L)return;const {p,ads}=L;c
     const by=H-M-safeBot-90;let x=M;if(price){x+=pill(ctx,price,x,by,42,AD_COL.deep,AD_COL.white).w+20}pill(ctx,cta+"  →",x,by,42,AD_COL.white,AD_COL.deep);
   }
 }
+function isCutout(img){try{const c=document.createElement("canvas");c.width=c.height=24;const x=c.getContext("2d");x.drawImage(img,0,0,24,24);const d=x.getImageData(0,0,24,24).data;const px=[0,23,24*23,24*24-1];return px.every(i=>{const a=d[i*4+3],r=d[i*4],g=d[i*4+1],b=d[i*4+2];return a<250||(r>232&&g>232&&b>232)})}catch(e){return false}}
+function placePhoto(ctx,img,x,y,w,h){ctx.fillStyle=AD_COL.paper;ctx.fillRect(x,y,w,h);if(isCutout(img)){const p=Math.round(Math.min(w,h)*0.08);contain(ctx,img,x+p,y+p,w-p*2,h-p*2)}else cover(ctx,img,x,y,w,h)}
 function drawAllAds(){document.querySelectorAll("#results canvas.adimg").forEach(c=>drawAd(c,+c.dataset.i))}
 function downloadAd(cv){if(!cv)return;const slug=(state.lastAds?.p?.name||"ad").toLowerCase().replace(/[^a-z0-9]+/g,"-").slice(0,40);
   cv.toBlob(b=>{if(!b){toast("Couldn't create the image");return}const a=document.createElement("a");a.href=URL.createObjectURL(b);a.download=`adtwin-${slug}-${+cv.dataset.i+1}-${state.adSize==="story"?"story":"feed"}.png`;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},2000);toast("PNG downloaded")},"image/png")}
