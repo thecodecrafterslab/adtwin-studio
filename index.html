@@ -226,7 +226,7 @@ th{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05
     <!-- CAMPAIGNS -->
     <section class="view" id="view-campaigns" hidden>
       <h1>Campaigns</h1>
-      <p class="lede">Launch saved ads to Facebook and Instagram and watch what sells. <span class="ex">EXAMPLE DATA</span></p>
+      <p class="lede">Ads you copied for Meta are listed as drafts. Post them in <a href="https://adsmanager.facebook.com/" target="_blank" rel="noopener" style="color:var(--sea)">Meta Ads Manager</a>. One-click launch is coming once Meta approves the app. <span class="ex">EXAMPLE RESULTS BELOW</span></p>
       <div class="kpis">
         <div class="kpi"><small>Spend, 7 days</small><div>$184</div></div>
         <div class="kpi"><small>Link clicks</small><div>1,326</div></div>
@@ -378,7 +378,7 @@ function render(p,useTwin,ai){
         <div class="shade"></div><span class="badge">IMAGE ${i+1}</span>
         <div class="hl">${esc(a.headline)}</div>${p.price?`<span class="px">${esc(p.price)}</span>`:""}</div>
       <div class="cta"><span>${esc(p.name)}</span><b>${a.cta}</b></div>
-      <div class="adactions"><button data-act="edit">Edit</button><button data-act="save">Save</button><button data-act="launch">Launch</button></div>
+      <div class="adactions"><button data-act="edit">Edit</button><button data-act="save">Save</button><button data-act="launch">Copy for Meta</button></div>
     </article>`;
   });
   html+=`<article class="phone">
@@ -390,7 +390,7 @@ function render(p,useTwin,ai){
         <div class="hl">${esc(vHead)}</div></div>
       ${useTwin?'<div class="twinvid" id="twinVid"></div>':""}
       <div class="cta"><span>${useTwin?esc(state.twin.name)+"'s twin":"Stock presenter"}</span><b>Send message</b></div>
-      <div class="adactions"><button data-act="edit">Edit script</button><button data-act="save">Save</button><button data-act="launch">Launch</button></div>
+      <div class="adactions"><button data-act="edit">Edit script</button><button data-act="save">Save</button><button data-act="launch">Copy for Meta</button></div>
     </article></div>
     <div class="panel script"><h2>Video script</h2><ol>${sc.map(s=>`<li><span>${s[0]}</span>${esc(s[1])}</li>`).join("")}</ol>
     <p class="hint">Targeting: ${esc(p.audience)} · ${esc(budget)}${ai?" · Copy by Claude":" · Template copy"}</p></div>`;
@@ -401,7 +401,7 @@ function render(p,useTwin,ai){
     const a=b.dataset.act;
     if(a==="save")toast("Saved to library");
     else if(a==="edit")toast("Editor opens here in the full app");
-    else{toast("Added to Campaigns as a draft");addCamp(b.closest(".phone").querySelector(".hl").textContent)}
+    else{const card=b.closest(".phone");const parts=[card.querySelector(".hl")?.textContent,card.querySelector(".copy")?.textContent||card.querySelector(".caption")?.textContent,card.querySelector(".cta b")?.textContent?("Button: "+card.querySelector(".cta b").textContent):""].filter(Boolean);const txt=parts.join("\n\n");const done=()=>{const dl=card.querySelector(".dl");toast(dl?"Text copied. Video opened: save it, then upload in Ads Manager":"Ad text copied. Paste it into Meta Ads Manager");if(dl)window.open(dl.href,"_blank","noopener");addCamp(card.querySelector(".hl").textContent)};navigator.clipboard.writeText(txt).then(done,()=>{prompt("Copy this ad text:",txt);done()})}
   });
 }
 function addCamp(name){const tr=document.createElement("tr");tr.innerHTML=`<td>${esc(name)}</td><td><span class="pill idle">Draft</span></td><td>$10</td><td>—</td><td>—</td><td>—</td>`;$("#campRows").prepend(tr)}
