@@ -355,10 +355,10 @@ function afterLogin(){$("#acctEmail").textContent=auth.user?.email||"Logged in";
 // ---- Saved ads ----
 async function saveBatch(p,ai,spoken){
   const product={name:p.name,price:p.price,brand:p.brand,desc:p.desc,tone:p.tone,audience:p.audience,url:$("#url").value.trim()};
-  try{const rows=await db("POST","/ads",{title:p.name.slice(0,120),product,copy:ai||{},spoken:spoken||""});state.currentAd=rows?.[0]?.id||null;loadLibrary()}
+  try{const rows=await db("POST","/ads",{title:p.name.slice(0,120),product,copy:ai||{},spoken:spoken||""});state.currentAd=rows?.[0]?.id||null;if(state.pendingEdit&&state.currentAd){state.pendingEdit=false;saveEdits()}loadLibrary()}
   catch(e){state.currentAd=null;toast("Couldn't save this batch: "+e.message)}}
 let _saveT;
-function saveEdits(){if(!state.currentAd||!state.lastAds)return;clearTimeout(_saveT);_saveT=setTimeout(async()=>{
+function saveEdits(){if(!state.lastAds)return;if(!state.currentAd){state.pendingEdit=true;return}clearTimeout(_saveT);_saveT=setTimeout(async()=>{
   const L=state.lastAds;const copy=Object.assign({},L.ai||{},{ads:L.ads.map(a=>({headline:a.headline,text:a.text,cta:a.cta}))});
   try{await db("PATCH","/ads?id=eq."+state.currentAd,{copy,spoken:$("#spokenEdit")?.value||""})}catch(e){toast("Couldn't save your edit: "+e.message)}},800)}
 async function loadLibrary(){
@@ -442,7 +442,7 @@ $("#adForm").onsubmit=e=>{
   $("#results").innerHTML=`<div class="panel loading">${steps.map((s,i)=>`<div class="ln" id="ln${i}">○ ${s}</div>`).join("")}</div>`;
   $("#genBtn").setAttribute("disabled","");
   const tick=i=>{const l=$("#ln"+i);if(l){l.textContent="✓ "+steps[i];l.classList.add("done")}};
-  const finish=(ai,note)=>{steps.forEach((s,i)=>tick(i));state.currentAd=null;render(p,useTwin,ai);saveBatch(p,ai,$("#spokenEdit")?.value||"");$("#genBtn").removeAttribute("disabled");toast(note)};
+  const finish=(ai,note)=>{steps.forEach((s,i)=>tick(i));state.currentAd=null;state.pendingEdit=false;render(p,useTwin,ai);saveBatch(p,ai,$("#spokenEdit")?.value||"");$("#genBtn").removeAttribute("disabled");toast(note)};
   tick(0);
   const t=setInterval(()=>{for(let i=1;i<steps.length-1;i++){const l=$("#ln"+i);if(l&&!l.classList.contains("done")){tick(i);break}}},2500);
   aiCopy(p,useTwin,state.twin.name).then(ai=>{clearInterval(t);
