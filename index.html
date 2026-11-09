@@ -121,6 +121,7 @@ th{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05
 .twinvid{margin-top:8px}.twinvid video{width:100%;max-width:100%;border-radius:12px;background:#000;display:block}.rendering{font:500 13px var(--mono);color:var(--muted);padding:12px;border:1px dashed var(--line);border-radius:10px}.rendering.err{color:var(--warn)}.dl{display:inline-block;margin-top:6px;font-size:12.5px;color:var(--sea)}
 .lock{position:fixed;inset:0;background:color-mix(in srgb,var(--bg) 85%,transparent);display:grid;place-items:center;z-index:30;padding:16px}.lockbox{width:min(380px,100%)}
 canvas.adimg{width:100%;height:auto;border-radius:14px;display:block;background:var(--line)}.sizebar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:12px}.photoprev img{margin-top:8px;max-height:110px;border-radius:10px;border:1px solid var(--line)}
+.hledit{width:100%;font:700 15px var(--display);color:var(--ink);background:transparent;border:1px dashed var(--line);border-radius:8px;padding:7px 9px;margin-top:8px}.copy[contenteditable]{border-radius:6px;outline:1px dashed transparent;outline-offset:2px}.copy[contenteditable]:hover,.copy[contenteditable]:focus{outline-color:var(--sea)}#spokenEdit{min-height:120px;margin-top:4px}.renderbar{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-top:8px}#twinResult{margin-top:8px}
 .toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:10px;font-weight:600;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:20}
 .toast.show{opacity:1}
 .roadmap{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
@@ -378,12 +379,12 @@ function render(p,useTwin,ai){
   const vHead=vid.headline||ads[1].headline, vCap=vid.caption||sc[1][1].replace(/"/g,"");
   const budget=ai?.budget||"Suggested budget $10/day for 7 days";
   state.lastAds={p,ads};
-  let html=`<div class="sizebar"><span class="hint">Image size</span><div class="chips" id="sizeChips"><button type="button" class="chip" aria-pressed="${state.adSize!=="story"}" data-v="feed">Feed 4:5</button><button type="button" class="chip" aria-pressed="${state.adSize==="story"}" data-v="story">Story 9:16</button></div><div class="chips" id="styleNote"><span class="hint">Three layouts, one per ad</span></div></div><div class="ads">`;
+  let html=`<div class="sizebar"><span class="hint">Image size</span><div class="chips" id="sizeChips"><button type="button" class="chip" aria-pressed="${state.adSize!=="story"}" data-v="feed">Feed 4:5</button><button type="button" class="chip" aria-pressed="${state.adSize==="story"}" data-v="story">Story 9:16</button></div><span class="hint">Click any headline or ad text to edit it. The images update as you type.</span></div><div class="ads">`;
   ads.forEach((a,i)=>{
     html+=`<article class="phone">
       <div class="meta"><div class="av">${initial}</div><div><b>${esc(p.brand)}</b><div class="sp">Sponsored</div></div></div>
-      <div class="copy">${esc(a.text)}</div>
-      <canvas class="adimg" data-i="${i}" aria-label="Ad image: ${esc(a.headline)}"></canvas><div class="hl" hidden>${esc(a.headline)}</div>
+      <div class="copy" contenteditable="true" spellcheck="true" data-i="${i}" data-f="text" title="Click to edit">${esc(a.text)}</div>
+      <canvas class="adimg" data-i="${i}" aria-label="Ad image: ${esc(a.headline)}"></canvas><div class="hl" hidden>${esc(a.headline)}</div><input class="hledit" data-i="${i}" data-f="headline" value="${esc(a.headline)}" aria-label="Headline for ad ${i+1}" title="Edit the headline">
       <div class="cta"><span>${esc(p.name)}</span><b>${a.cta}</b></div>
       <div class="adactions"><button data-act="png">Download PNG</button><button data-act="launch">Copy for Meta</button></div>
     </article>`;
@@ -405,12 +406,17 @@ function render(p,useTwin,ai){
   document.querySelectorAll("#results canvas:not(.adimg)").forEach(c=>drawPattern(c,+c.dataset.h,+c.dataset.s));
   drawAllAds();
   document.querySelectorAll("#sizeChips .chip").forEach(c=>c.onclick=()=>{state.adSize=c.dataset.v;document.querySelectorAll("#sizeChips .chip").forEach(x=>x.setAttribute("aria-pressed",x===c));drawAllAds()});
-  if(useTwin){const spoken=(vid.spoken||sc.map(x=>x[1]).join(" ")).replace(/[\[\]"“”]/g,"").trim();renderTwinVideo(spoken,$("#twinVid"))}
+  document.querySelectorAll("#results [data-f]").forEach(el=>{let t;el.addEventListener("input",()=>{const i=+el.dataset.i,f=el.dataset.f,v=(el.value??el.textContent).trim();state.lastAds.ads[i][f]=v;if(f==="headline"){const card=el.closest(".phone");card.querySelector(".hl").textContent=v;clearTimeout(t);t=setTimeout(()=>drawAd(card.querySelector("canvas.adimg"),i),250)}})});
+  if(useTwin){const spoken=(vid.spoken||sc.map(x=>x[1]).join(" ")).replace(/[\[\]"“”]/g,"").trim();const box=$("#twinVid");
+    box.innerHTML=`<label for="spokenEdit">Twin script. Check and edit it before rendering.</label><textarea id="spokenEdit" rows="6">${esc(spoken)}</textarea><div class="renderbar"><span class="hint" id="spokenEst"></span><button type="button" class="btn" id="renderBtn">Render twin video</button></div><div id="twinResult"></div>`;
+    const ta=$("#spokenEdit");const est=()=>{const w=ta.value.trim().split(/\s+/).filter(Boolean).length,sec=Math.round(w/2.5),rate={avatar_iii:0.6,avatar_iv:4.83,avatar_v:7.2}[$("#engineSel").value]||0.6;$("#spokenEst").textContent=`${w} words · about ${sec}s · about US$${(sec/60*rate).toFixed(2)} on your HeyGen balance`};
+    ta.oninput=est;$("#engineSel").onchange=est;est();
+    $("#renderBtn").onclick=async()=>{const s=ta.value.trim();if(!s){toast("Add a script first");return}if(s.length>1500){toast("Script is too long. Keep it under 1,500 characters.");return}const b=$("#renderBtn");b.setAttribute("disabled","");b.textContent="Rendering…";await renderTwinVideo(s,$("#twinResult"));b.removeAttribute("disabled");b.textContent="Render again"}}
   document.querySelectorAll(".adactions button").forEach(b=>b.onclick=()=>{
     const a=b.dataset.act;
     if(a==="png"){downloadAd(b.closest(".phone").querySelector("canvas.adimg"));return}
     if(a==="save")toast("Saved to library");
-    else if(a==="edit")toast("Editor opens here in the full app");
+    else if(a==="edit"){const ta=$("#spokenEdit");if(ta){ta.focus();ta.scrollIntoView({block:"center"})}else toast("Tick the twin option and generate to get an editable script")}
     else{const card=b.closest(".phone");const parts=[card.querySelector(".hl")?.textContent,card.querySelector(".copy")?.textContent||card.querySelector(".caption")?.textContent,card.querySelector(".cta b")?.textContent?("Button: "+card.querySelector(".cta b").textContent):""].filter(Boolean);const txt=parts.join("\n\n");const done=()=>{const dl=card.querySelector(".dl");toast(dl?"Text copied. Video opened: save it, then upload in Ads Manager":"Ad text copied. Paste it into Meta Ads Manager");if(dl)window.open(dl.href,"_blank","noopener");addCamp(card.querySelector(".hl").textContent)};navigator.clipboard.writeText(txt).then(done,()=>{prompt("Copy this ad text:",txt);done()})}
   });
 }
