@@ -120,6 +120,7 @@ th{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05
 .ex{font:500 11px var(--mono);color:var(--warn);margin-left:8px}
 .twinvid{margin-top:8px}.twinvid video{width:100%;max-width:100%;border-radius:12px;background:#000;display:block}.rendering{font:500 13px var(--mono);color:var(--muted);padding:12px;border:1px dashed var(--line);border-radius:10px}.rendering.err{color:var(--warn)}.dl{display:inline-block;margin-top:6px;font-size:12.5px;color:var(--sea)}
 .lock{position:fixed;inset:0;background:color-mix(in srgb,var(--bg) 85%,transparent);display:grid;place-items:center;z-index:30;padding:16px}.lockbox{width:min(380px,100%)}
+canvas.adimg{width:100%;height:auto;border-radius:14px;display:block;background:var(--line)}.sizebar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:12px}.photoprev img{margin-top:8px;max-height:110px;border-radius:10px;border:1px solid var(--line)}
 .toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:10px;font-weight:600;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:20}
 .toast.show{opacity:1}
 .roadmap{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
@@ -171,7 +172,7 @@ th{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05
           <label for="desc">What makes it good</label>
           <textarea id="desc">Hot-dip galvanised so it won't rust in salt water. Built in Lami for Fiji roads and ramps. Rollers and winch included.</textarea>
           <label for="photo">Product photo (optional)</label>
-          <input type="file" id="photo" accept="image/*">
+          <input type="file" id="photo" accept="image/*"><div class="photoprev" id="photoPrev"></div>
           <label>Tone</label>
           <div class="chips" id="tone">
             <button type="button" class="chip" aria-pressed="true" data-v="friendly">Friendly</button>
@@ -281,7 +282,7 @@ document.querySelectorAll("nav.rail button").forEach(b=>b.onclick=()=>show(b.dat
 document.querySelectorAll("#tone .chip").forEach(c=>c.onclick=()=>{document.querySelectorAll("#tone .chip").forEach(x=>x.setAttribute("aria-pressed","false"));c.setAttribute("aria-pressed","true");state.tone=c.dataset.v});
 
 function readImg(file,cb){if(!file)return;const r=new FileReader();r.onload=()=>cb(r.result);r.readAsDataURL(file)}
-$("#photo").onchange=e=>{state.photoFile=e.target.files[0]||null;readImg(e.target.files[0],d=>{state.photo=d;toast("Photo added")})};
+$("#photo").onchange=e=>{state.photoFile=e.target.files[0]||null;readImg(e.target.files[0],d=>{state.photo=d;$("#photoPrev").innerHTML=`<img src="${d}" alt="">`;toast("Photo added")})};
 
 // API helpers (Netlify functions; HeyGen key stays server-side)
 const FN="https://bblsdugfoccfrbmcjvow.supabase.co/functions/v1/adtwin-video";
@@ -302,7 +303,14 @@ async function aiCopy(p,useTwin,name){
   return d.copy;
 }
 
-$("#fetchBtn").onclick=()=>{const b=$("#fetchBtn");b.textContent="Reading…";setTimeout(()=>{b.textContent="Fetch";toast("Product details filled from link (simulated)")},900)};
+$("#fetchBtn").onclick=async()=>{const b=$("#fetchBtn");const url=$("#url").value.trim();if(!url){toast("Paste a product link first");return}
+  b.textContent="Reading…";b.setAttribute("disabled","");
+  try{const d=await api("/api/fetch",{action:"fetch",url});
+    if(d.title)$("#pname").value=d.title.slice(0,90);if(d.price)$("#price").value=d.price;if(d.brand)$("#brandName").value=d.brand;if(d.description)$("#desc").value=d.description;
+    if(d.image){state.photo=d.image;state.photoFile=await (await fetch(d.image)).blob();$("#photoPrev").innerHTML=`<img src="${d.image}" alt="">`}
+    $(".fetch+.hint").textContent=d.image?"Details and photo filled from the link. Check them before generating.":"Details filled from the link. No photo found; add one below.";
+    toast("Product details filled from the link");
+  }catch(e){toast(e.data?.error||e.message)}finally{b.textContent="Fetch";b.removeAttribute("disabled")}};
 
 // copy generator (stand-in for the LLM call)
 function copyFor(p){
@@ -369,16 +377,15 @@ function render(p,useTwin,ai){
   const sc=Array.isArray(vid.script)&&vid.script.length?vid.script.map(s=>[s.t||"",s.line||""]):scriptFor(p,useTwin?state.twin.name:"Presenter");
   const vHead=vid.headline||ads[1].headline, vCap=vid.caption||sc[1][1].replace(/"/g,"");
   const budget=ai?.budget||"Suggested budget $10/day for 7 days";
-  let html=`<div class="ads">`;
+  state.lastAds={p,ads};
+  let html=`<div class="sizebar"><span class="hint">Image size</span><div class="chips" id="sizeChips"><button type="button" class="chip" aria-pressed="${state.adSize!=="story"}" data-v="feed">Feed 4:5</button><button type="button" class="chip" aria-pressed="${state.adSize==="story"}" data-v="story">Story 9:16</button></div><div class="chips" id="styleNote"><span class="hint">Three layouts, one per ad</span></div></div><div class="ads">`;
   ads.forEach((a,i)=>{
     html+=`<article class="phone">
       <div class="meta"><div class="av">${initial}</div><div><b>${esc(p.brand)}</b><div class="sp">Sponsored</div></div></div>
       <div class="copy">${esc(a.text)}</div>
-      <div class="creative">${state.photo?`<img class="prod" src="${state.photo}" alt="">`:`<canvas data-h="${a.hue}" data-s="${i}"></canvas>`}
-        <div class="shade"></div><span class="badge">IMAGE ${i+1}</span>
-        <div class="hl">${esc(a.headline)}</div>${p.price?`<span class="px">${esc(p.price)}</span>`:""}</div>
+      <canvas class="adimg" data-i="${i}" aria-label="Ad image: ${esc(a.headline)}"></canvas><div class="hl" hidden>${esc(a.headline)}</div>
       <div class="cta"><span>${esc(p.name)}</span><b>${a.cta}</b></div>
-      <div class="adactions"><button data-act="edit">Edit</button><button data-act="save">Save</button><button data-act="launch">Copy for Meta</button></div>
+      <div class="adactions"><button data-act="png">Download PNG</button><button data-act="launch">Copy for Meta</button></div>
     </article>`;
   });
   html+=`<article class="phone">
@@ -395,15 +402,68 @@ function render(p,useTwin,ai){
     <div class="panel script"><h2>Video script</h2><ol>${sc.map(s=>`<li><span>${s[0]}</span>${esc(s[1])}</li>`).join("")}</ol>
     <p class="hint">Targeting: ${esc(p.audience)} · ${esc(budget)}${ai?" · Copy by Claude":" · Template copy"}</p></div>`;
   $("#results").innerHTML=html;
-  document.querySelectorAll("#results canvas").forEach(c=>drawPattern(c,+c.dataset.h,+c.dataset.s));
+  document.querySelectorAll("#results canvas:not(.adimg)").forEach(c=>drawPattern(c,+c.dataset.h,+c.dataset.s));
+  drawAllAds();
+  document.querySelectorAll("#sizeChips .chip").forEach(c=>c.onclick=()=>{state.adSize=c.dataset.v;document.querySelectorAll("#sizeChips .chip").forEach(x=>x.setAttribute("aria-pressed",x===c));drawAllAds()});
   if(useTwin){const spoken=(vid.spoken||sc.map(x=>x[1]).join(" ")).replace(/[\[\]"“”]/g,"").trim();renderTwinVideo(spoken,$("#twinVid"))}
   document.querySelectorAll(".adactions button").forEach(b=>b.onclick=()=>{
     const a=b.dataset.act;
+    if(a==="png"){downloadAd(b.closest(".phone").querySelector("canvas.adimg"));return}
     if(a==="save")toast("Saved to library");
     else if(a==="edit")toast("Editor opens here in the full app");
     else{const card=b.closest(".phone");const parts=[card.querySelector(".hl")?.textContent,card.querySelector(".copy")?.textContent||card.querySelector(".caption")?.textContent,card.querySelector(".cta b")?.textContent?("Button: "+card.querySelector(".cta b").textContent):""].filter(Boolean);const txt=parts.join("\n\n");const done=()=>{const dl=card.querySelector(".dl");toast(dl?"Text copied. Video opened: save it, then upload in Ads Manager":"Ad text copied. Paste it into Meta Ads Manager");if(dl)window.open(dl.href,"_blank","noopener");addCamp(card.querySelector(".hl").textContent)};navigator.clipboard.writeText(txt).then(done,()=>{prompt("Copy this ad text:",txt);done()})}
   });
 }
+
+// ---- Image ad renderer (real PNGs, 1080 wide) ----
+const AD_COL={ocean:"#0b3954",deep:"#06263a",sun:"#f6b81c",sunInk:"#3a2900",white:"#ffffff",paper:"#f4f7f9"};
+let _imgCache={src:null,img:null};
+function loadAdImg(src){if(!src)return Promise.resolve(null);if(_imgCache.src===src)return Promise.resolve(_imgCache.img);
+  return new Promise(res=>{const im=new Image();im.onload=()=>{_imgCache={src,img:im};res(im)};im.onerror=()=>res(null);im.src=src})}
+function rr(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath()}
+function cover(ctx,img,x,y,w,h){const s=Math.max(w/img.width,h/img.height),iw=img.width*s,ih=img.height*s;ctx.save();ctx.beginPath();ctx.rect(x,y,w,h);ctx.clip();ctx.drawImage(img,x+(w-iw)/2,y+(h-ih)/2,iw,ih);ctx.restore()}
+function contain(ctx,img,x,y,w,h){const s=Math.min(w/img.width,h/img.height),iw=img.width*s,ih=img.height*s;ctx.drawImage(img,x+(w-iw)/2,y+(h-ih)/2,iw,ih)}
+function wrap(ctx,text,maxW,size,maxLines,weight,family){let sz=size,lines;
+  for(;sz>=size*0.5;sz-=4){ctx.font=`${weight} ${sz}px ${family}`;lines=[];let cur="";
+    for(const w of String(text).split(/\s+/)){const t=cur?cur+" "+w:w;if(ctx.measureText(t).width>maxW&&cur){lines.push(cur);cur=w}else cur=t}
+    if(cur)lines.push(cur);if(lines.length<=maxLines&&lines.every(l=>ctx.measureText(l).width<=maxW))break}
+  return {lines,size:sz}}
+function pattern(ctx,W,H,hue){const g=ctx.createLinearGradient(0,0,W,H);g.addColorStop(0,`hsl(${hue} 60% 34%)`);g.addColorStop(1,`hsl(${hue+25} 70% 14%)`);ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+  ctx.strokeStyle=`hsla(${hue+10},80%,75%,.18)`;ctx.lineWidth=5;for(let i=0;i<9;i++){ctx.beginPath();for(let x=0;x<=W;x+=20){const y=H*0.3+i*H*0.06+Math.sin((x+i*60)/90)*22;x?ctx.lineTo(x,y):ctx.moveTo(x,y)}ctx.stroke()}}
+function pill(ctx,text,x,y,fs,bg,fg,align){ctx.font=`700 ${fs}px Figtree, sans-serif`;const w=ctx.measureText(text).width+fs*1.6,h=fs*2;const px=align==="right"?x-w:x;ctx.fillStyle=bg;rr(ctx,px,y,w,h,h/2);ctx.fill();ctx.fillStyle=fg;ctx.textBaseline="middle";ctx.fillText(text,px+fs*0.8,y+h/2);ctx.textBaseline="alphabetic";return {w,h}}
+async function drawAd(cv,i){const L=state.lastAds;if(!L)return;const {p,ads}=L;const a=ads[i];const story=state.adSize==="story";
+  const W=1080,H=story?1920:1350;cv.width=W;cv.height=H;const ctx=cv.getContext("2d");
+  try{await Promise.all([document.fonts.load('800 80px "Bricolage Grotesque"'),document.fonts.load('700 40px Figtree')])}catch(e){}
+  const img=await loadAdImg(state.photo);const D='"Bricolage Grotesque", sans-serif';const M=72;const safeTop=story?200:0,safeBot=story?260:0;
+  const brand=(p.brand||"").toUpperCase(),head=a.headline,price=p.price||"",cta=(a.cta||"Learn more").toUpperCase();
+  if(i%3===0){ // full-bleed photo with overlay
+    if(img)cover(ctx,img,0,0,W,H);else pattern(ctx,W,H,200);
+    const g=ctx.createLinearGradient(0,H*0.38,0,H);g.addColorStop(0,"rgba(6,38,58,0)");g.addColorStop(1,"rgba(6,38,58,.94)");ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+    pill(ctx,brand,M,M+safeTop,30,"rgba(0,0,0,.45)",AD_COL.white);
+    const t=wrap(ctx,head,W-M*2,118,3,800,D);ctx.fillStyle=AD_COL.white;const lh=t.size*1.02;let y=H-M-safeBot-150-(t.lines.length-1)*lh;t.lines.forEach((l,k)=>{ctx.fillText(l,M,y+k*lh)});
+    const by=H-M-safeBot-96;let x=M;if(price){x+=pill(ctx,price,x,by,40,AD_COL.sun,AD_COL.sunInk).w+20}pill(ctx,cta+"  →",x,by,40,AD_COL.white,AD_COL.deep);
+  }else if(i%3===1){ // split: photo top, panel bottom
+    const ph=Math.round(H*0.6);ctx.fillStyle=AD_COL.paper;ctx.fillRect(0,0,W,ph);
+    if(img)cover(ctx,img,0,0,W,ph);else pattern(ctx,W,ph,165);
+    ctx.fillStyle=AD_COL.ocean;ctx.fillRect(0,ph,W,H-ph);ctx.fillStyle=AD_COL.sun;ctx.fillRect(0,ph,W,14);
+    if(price){ctx.save();ctx.translate(W-M,ph-60);pill(ctx,price,0,0,46,AD_COL.sun,AD_COL.sunInk,"right");ctx.restore()}
+    ctx.fillStyle="rgba(255,255,255,.7)";ctx.font="700 30px Figtree, sans-serif";ctx.fillText(brand,M,ph+M+20);
+    const t=wrap(ctx,head,W-M*2,104,3,800,D);ctx.fillStyle=AD_COL.white;const lh=t.size*1.04;t.lines.forEach((l,k)=>ctx.fillText(l,M,ph+M+40+t.size+k*lh));
+    pill(ctx,cta+"  →",M,H-M-safeBot-80,40,AD_COL.sun,AD_COL.sunInk);
+  }else{ // bold type on sun, product on card
+    ctx.fillStyle=AD_COL.sun;ctx.fillRect(0,0,W,H);
+    ctx.fillStyle=AD_COL.sunInk;ctx.font="700 30px Figtree, sans-serif";ctx.fillText(brand,M,M+30+safeTop);
+    const t=wrap(ctx,head,W-M*2,132,3,800,D);ctx.fillStyle=AD_COL.deep;const lh=t.size*1.0;t.lines.forEach((l,k)=>ctx.fillText(l,M,M+70+safeTop+t.size+k*lh));
+    const top=M+100+safeTop+t.size+(t.lines.length-1)*lh+40,cardH=H-top-M-safeBot-130;
+    ctx.fillStyle=AD_COL.white;rr(ctx,M,top,W-M*2,cardH,36);ctx.fill();
+    if(img){ctx.save();rr(ctx,M,top,W-M*2,cardH,36);ctx.clip();contain(ctx,img,M+40,top+40,W-M*2-80,cardH-80);ctx.restore()}
+    else{ctx.fillStyle=AD_COL.ocean;ctx.font=`800 64px ${D}`;ctx.textAlign="center";ctx.fillText(p.name.slice(0,24),W/2,top+cardH/2);ctx.textAlign="left"}
+    const by=H-M-safeBot-90;let x=M;if(price){x+=pill(ctx,price,x,by,42,AD_COL.deep,AD_COL.white).w+20}pill(ctx,cta+"  →",x,by,42,AD_COL.white,AD_COL.deep);
+  }
+}
+function drawAllAds(){document.querySelectorAll("#results canvas.adimg").forEach(c=>drawAd(c,+c.dataset.i))}
+function downloadAd(cv){if(!cv)return;const slug=(state.lastAds?.p?.name||"ad").toLowerCase().replace(/[^a-z0-9]+/g,"-").slice(0,40);
+  cv.toBlob(b=>{if(!b){toast("Couldn't create the image");return}const a=document.createElement("a");a.href=URL.createObjectURL(b);a.download=`adtwin-${slug}-${+cv.dataset.i+1}-${state.adSize==="story"?"story":"feed"}.png`;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},2000);toast("PNG downloaded")},"image/png")}
 function addCamp(name){const tr=document.createElement("tr");tr.innerHTML=`<td>${esc(name)}</td><td><span class="pill idle">Draft</span></td><td>$10</td><td>—</td><td>—</td><td>—</td>`;$("#campRows").prepend(tr)}
 
 // twin (real, from HeyGen)
