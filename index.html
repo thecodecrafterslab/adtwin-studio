@@ -122,6 +122,7 @@ th{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05
 .lock{position:fixed;inset:0;background:color-mix(in srgb,var(--bg) 85%,transparent);display:grid;place-items:center;z-index:30;padding:16px}.lockbox{width:min(380px,100%)}
 canvas.adimg{width:100%;height:auto;border-radius:14px;display:block;background:var(--line)}.sizebar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:12px}.photoprev img{margin-top:8px;max-height:110px;border-radius:10px;border:1px solid var(--line)}
 .hledit{width:100%;font:700 15px var(--display);color:var(--ink);background:transparent;border:1px dashed var(--line);border-radius:8px;padding:7px 9px;margin-top:8px}.copy[contenteditable]{border-radius:6px;outline:1px dashed transparent;outline-offset:2px}.copy[contenteditable]:hover,.copy[contenteditable]:focus{outline-color:var(--sea)}#spokenEdit{min-height:120px;margin-top:4px}.renderbar{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-top:8px}#twinResult{margin-top:8px}
+.acct{display:flex;gap:8px;align-items:center;min-width:0}.acct .credits{max-width:46vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.btn.small{padding:6px 11px;font-size:13px}.authtabs{display:flex;gap:6px;margin-bottom:12px}.libgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}.libcard{display:flex;flex-direction:column;gap:6px}.libtop{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}.libheads{margin:4px 0;padding-left:18px;font-size:13.5px}.libfoot{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:auto;flex-wrap:wrap}.libbtns{display:flex;gap:6px}
 .toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:10px;font-weight:600;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:20}
 .toast.show{opacity:1}
 .roadmap{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
@@ -139,12 +140,13 @@ canvas.adimg{width:100%;height:auto;border-radius:14px;display:block;background:
 
 <header class="top">
   <div class="brand"><span class="mark" aria-hidden="true"></span>AdTwin Studio</div>
-  <div class="credits">Twin · <b id="twinTop">HeyGen</b></div>
+  <div class="acct"><span class="credits" id="acctEmail">Not logged in</span><button type="button" class="btn ghost small" id="logoutBtn" hidden>Log out</button></div>
 </header>
 
 <div class="shell">
   <nav class="rail" aria-label="Studio sections">
     <button data-view="create" aria-current="true">Create ad <span class="tag">⌘1</span></button>
+    <button data-view="library">My ads <span class="tag" id="libCount"></span></button>
     <button data-view="twin">My twin <span class="tag" id="twinTag">not set up</span></button>
     <button data-view="campaigns">Campaigns <span class="tag">⌘3</span></button>
     <button data-view="build">Build plan <span class="tag">dev</span></button>
@@ -226,6 +228,12 @@ canvas.adimg{width:100%;height:auto;border-radius:14px;display:block;background:
     </section>
 
     <!-- CAMPAIGNS -->
+    <section class="view" id="view-library" hidden>
+      <h1>My ads</h1>
+      <p class="lede">Every batch you generate is saved here with your edits and twin videos. Open one to keep working on it.</p>
+      <div id="libList"><div class="empty"><h2>No saved ads yet</h2><p>Generate your first ads on the Create ad tab. They'll appear here automatically.</p></div></div>
+    </section>
+
     <section class="view" id="view-campaigns" hidden>
       <h1>Campaigns</h1>
       <p class="lede">Ads you copied for Meta are listed as drafts. Post them in <a href="https://adsmanager.facebook.com/" target="_blank" rel="noopener" style="color:var(--sea)">Meta Ads Manager</a>. One-click launch is coming once Meta approves the app. <span class="ex">EXAMPLE RESULTS BELOW</span></p>
@@ -265,7 +273,17 @@ canvas.adimg{width:100%;height:auto;border-radius:14px;display:block;background:
   </main>
 </div>
 <div class="toast" id="toast" role="status"></div>
-<div class="lock" id="lock" hidden><form class="panel lockbox" id="lockForm"><h2>Enter access code</h2><p class="hint">This keeps your HeyGen and Claude credits private to you.</p><label for="lockCode">Access code</label><input type="text" id="lockCode" autocomplete="off" placeholder="xxxx-xxxx-xxxx"><p class="hint" id="lockMsg" style="color:var(--warn)"></p><button class="btn full" type="submit">Unlock</button></form></div>
+<div class="lock" id="lock" hidden><form class="panel lockbox" id="authForm" novalidate>
+  <div class="authtabs" role="tablist"><button type="button" role="tab" class="chip" id="tabIn" aria-pressed="true">Log in</button><button type="button" role="tab" class="chip" id="tabUp" aria-pressed="false">Create account</button></div>
+  <h2 id="authTitle">Log in to AdTwin Studio</h2>
+  <p class="hint" id="authLede">Your ads, edits and twin videos are saved to your account.</p>
+  <div id="nameRow" hidden><label for="authName">Your name</label><input type="text" id="authName" autocomplete="name"></div>
+  <label for="authEmail">Email</label><input type="text" inputmode="email" id="authEmail" autocomplete="email">
+  <label for="authPass">Password</label><input type="password" id="authPass" autocomplete="current-password">
+  <label class="toggle" id="termsRow" for="authTerms" hidden><input type="checkbox" id="authTerms"> <span>I'll only create a twin of myself, or of someone who has recorded their own consent.</span></label>
+  <p class="hint" id="authMsg" style="color:var(--warn)"></p>
+  <button class="btn full" type="submit" id="authBtn">Log in</button>
+</form></div>
 
 <script>
 const $=s=>document.querySelector(s);
@@ -275,7 +293,7 @@ function setCredits(n){}
 function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
 
 // nav
-const views=["create","twin","campaigns","build"];
+const views=["create","library","twin","campaigns","build"];
 function show(v){views.forEach(x=>{$("#view-"+x).hidden=x!==v});document.querySelectorAll("nav.rail button").forEach(b=>b.setAttribute("aria-current",b.dataset.view===v))}
 document.querySelectorAll("nav.rail button").forEach(b=>b.onclick=()=>show(b.dataset.view));
 
@@ -285,18 +303,85 @@ document.querySelectorAll("#tone .chip").forEach(c=>c.onclick=()=>{document.quer
 function readImg(file,cb){if(!file)return;const r=new FileReader();r.onload=()=>cb(r.result);r.readAsDataURL(file)}
 $("#photo").onchange=e=>{state.photoFile=e.target.files[0]||null;readImg(e.target.files[0],d=>{state.photo=d;$("#photoPrev").innerHTML=`<img src="${d}" alt="">`;toast("Photo added")})};
 
-// API helpers (Netlify functions; HeyGen key stays server-side)
-const FN="https://bblsdugfoccfrbmcjvow.supabase.co/functions/v1/adtwin-video";
+// API helpers. Logins come from Neon Auth via the backend; ads are stored in Neon (row-level security per user).
+const FN="https://bblsdugfoccfrbmcjvow.supabase.co/functions/v1/adtwin-api";
 const ANON="sb_publishable_KLhLXAiFY2spzDHa7Y8oug_o9k9dda9";
-function getCode(){try{return localStorage.getItem("adtwin-code")||""}catch(e){return state._code||""}}
-function setCode(c){state._code=c;try{localStorage.setItem("adtwin-code",c)}catch(e){}}
+const DATA="https://ep-curly-smoke-a1bezxvs.apirest.ap-southeast-1.aws.neon.tech/neondb/rest/v1";
+const auth={session:"",jwt:"",user:null};
+try{Object.assign(auth,JSON.parse(localStorage.getItem("adtwin-auth")||"{}"))}catch(e){}
+function saveAuth(){try{localStorage.setItem("adtwin-auth",JSON.stringify(auth))}catch(e){}}
+function jwtExp(t){try{return JSON.parse(atob(t.split(".")[1].replace(/-/g,"+").replace(/_/g,"/"))).exp*1000}catch(e){return 0}}
+async function call(body,token){
+  const h={"Content-Type":"application/json",apikey:ANON,Authorization:"Bearer "+ANON};if(token)h["x-adtwin-token"]=token;
+  const r=await fetch(FN,{method:"POST",headers:h,body:JSON.stringify(body)});return {r,d:await r.json().catch(()=>({}))}}
+let _refreshing=null;
+async function freshJwt(force){
+  if(!auth.session){showLock("");throw new Error("Please log in")}
+  if(!force&&auth.jwt&&jwtExp(auth.jwt)-Date.now()>60e3)return auth.jwt;
+  _refreshing=_refreshing||call({action:"refresh",session:auth.session}).finally(()=>setTimeout(()=>_refreshing=null,0));
+  const {r,d}=await _refreshing;
+  if(!r.ok||!d.jwt){logout(true);throw new Error("Your session has ended. Please log in again.")}
+  auth.jwt=d.jwt;saveAuth();return auth.jwt}
 async function api(path,body){
   const action=path==="/api/copy"?"copy":body.action;
-  const r=await fetch(FN,{method:"POST",headers:{"Content-Type":"application/json",apikey:ANON,Authorization:"Bearer "+ANON,"x-adtwin-code":getCode()},body:JSON.stringify({...body,action})});
-  const d=await r.json().catch(()=>({}));
-  if(r.status===401){showLock("That access code didn't work.");throw new Error("Wrong access code")}
+  let {r,d}=await call({...body,action},await freshJwt());
+  if(r.status===401){({r,d}=await call({...body,action},await freshJwt(true)))}
   if(!r.ok)throw Object.assign(new Error(d?.error?.message||d?.error||("HTTP "+r.status)),{data:d});return d}
-function showLock(msg){$("#lock").hidden=false;$("#lockMsg").textContent=msg||"";$("#lockCode").focus()}
+async function db(method,path,body){
+  const go=async t=>fetch(DATA+path,{method,headers:{Authorization:"Bearer "+t,"Content-Type":"application/json",Prefer:"return=representation"},body:body?JSON.stringify(body):undefined});
+  let r=await go(await freshJwt());if(r.status===401)r=await go(await freshJwt(true));
+  const d=await r.json().catch(()=>null);if(!r.ok)throw new Error(d?.message||("Save failed ("+r.status+")"));return d}
+function showLock(msg){$("#lock").hidden=false;$("#authMsg").textContent=msg||"";setTimeout(()=>$("#authEmail").focus(),50)}
+let authMode="in";
+function setMode(m){authMode=m;const up=m==="up";$("#tabIn").setAttribute("aria-pressed",!up);$("#tabUp").setAttribute("aria-pressed",up);
+  $("#nameRow").hidden=!up;$("#termsRow").hidden=!up;$("#authTitle").textContent=up?"Create your AdTwin account":"Log in to AdTwin Studio";
+  $("#authBtn").textContent=up?"Create account":"Log in";$("#authPass").autocomplete=up?"new-password":"current-password";$("#authMsg").textContent=""}
+$("#tabIn").onclick=()=>setMode("in");$("#tabUp").onclick=()=>setMode("up");
+$("#authForm").onsubmit=async e=>{e.preventDefault();const up=authMode==="up";const email=$("#authEmail").value.trim(),password=$("#authPass").value;
+  if(!email||!password){$("#authMsg").textContent="Enter your email and password.";return}
+  if(up&&password.length<8){$("#authMsg").textContent="Use a password of at least 8 characters.";return}
+  if(up&&!$("#authTerms").checked){$("#authMsg").textContent="Tick the twin consent box to continue.";return}
+  const b=$("#authBtn");b.setAttribute("disabled","");b.textContent=up?"Creating account…":"Logging in…";
+  try{const {r,d}=await call({action:up?"signup":"signin",email,password,name:$("#authName").value.trim()});
+    if(!r.ok)throw new Error(d.error||"Couldn't log in.");
+    Object.assign(auth,{session:d.session,jwt:d.jwt,user:d.user});saveAuth();$("#authPass").value="";$("#lock").hidden=true;afterLogin();toast(up?"Account created. Welcome!":"Logged in")}
+  catch(err){$("#authMsg").textContent=err.message}finally{b.removeAttribute("disabled");setMode(authMode)}};
+function logout(silent){const s=auth.session;Object.assign(auth,{session:"",jwt:"",user:null});saveAuth();if(s)call({action:"signout",session:s}).catch(()=>{});
+  $("#acctEmail").textContent="Not logged in";$("#logoutBtn").hidden=true;state.twin.ready=false;if(!silent)toast("Logged out");setMode("in");showLock(silent?"Your session has ended. Please log in again.":"")}
+$("#logoutBtn").onclick=()=>logout(false);
+function afterLogin(){$("#acctEmail").textContent=auth.user?.email||"Logged in";$("#logoutBtn").hidden=false;
+  if(auth.user?.name&&$("#twinName"))$("#twinName").value=auth.user.name;state.twin.name=(auth.user?.name||"").split(" ")[0]||"You";loadTwin();loadLibrary()}
+
+// ---- Saved ads ----
+async function saveBatch(p,ai,spoken){
+  const product={name:p.name,price:p.price,brand:p.brand,desc:p.desc,tone:p.tone,audience:p.audience,url:$("#url").value.trim()};
+  try{const rows=await db("POST","/ads",{title:p.name.slice(0,120),product,copy:ai||{},spoken:spoken||""});state.currentAd=rows?.[0]?.id||null;if(state.pendingEdit&&state.currentAd){state.pendingEdit=false;saveEdits()}loadLibrary()}
+  catch(e){state.currentAd=null;toast("Couldn't save this batch: "+e.message)}}
+let _saveT;
+function saveEdits(){if(!state.lastAds)return;if(!state.currentAd){state.pendingEdit=true;return}clearTimeout(_saveT);_saveT=setTimeout(async()=>{
+  const L=state.lastAds;const copy=Object.assign({},L.ai||{},{ads:L.ads.map(a=>({headline:a.headline,text:a.text,cta:a.cta}))});
+  try{await db("PATCH","/ads?id=eq."+state.currentAd,{copy,spoken:$("#spokenEdit")?.value||""})}catch(e){toast("Couldn't save your edit: "+e.message)}},800)}
+async function loadLibrary(){
+  if(!auth.session)return;
+  try{const rows=await db("GET","/ads?select=id,created_at,title,product,copy,spoken,video_id,video_engine&order=created_at.desc&limit=100");
+    $("#libCount").textContent=rows.length?String(rows.length):"";
+    if(!rows.length){$("#libList").innerHTML=`<div class="empty"><h2>No saved ads yet</h2><p>Generate your first ads on the Create ad tab. They'll appear here automatically.</p></div>`;return}
+    state.library=rows;
+    $("#libList").innerHTML=`<div class="libgrid">${rows.map(r=>{const heads=(r.copy?.ads||[]).map(a=>a.headline).filter(Boolean);
+      return `<article class="panel libcard"><div class="libtop"><b>${esc(r.title||"Untitled")}</b><span class="hint">${new Date(r.created_at).toLocaleString()}</span></div>
+      <p class="hint">${esc(r.product?.brand||"")}${r.product?.price?" · "+esc(r.product.price):""}</p>
+      <ul class="libheads">${heads.slice(0,3).map(h=>`<li>${esc(h)}</li>`).join("")||"<li>Template copy</li>"}</ul>
+      <div class="libfoot">${r.video_id?'<span class="pill good">Twin video</span>':'<span class="pill idle">No video</span>'}<span class="libbtns"><button type="button" class="btn ghost small" data-open="${r.id}">Open</button><button type="button" class="btn ghost small" data-del="${r.id}">Delete</button></span></div></article>`}).join("")}</div>`;
+    document.querySelectorAll("[data-open]").forEach(b=>b.onclick=()=>openAd(b.dataset.open));
+    document.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>delAd(b.dataset.del,b));
+  }catch(e){$("#libList").innerHTML=`<div class="empty"><p>Couldn't load your ads: ${esc(e.message)}</p></div>`}}
+async function delAd(id,btn){if(btn.dataset.confirm!=="1"){btn.dataset.confirm="1";btn.textContent="Delete? Click again";setTimeout(()=>{btn.dataset.confirm="";btn.textContent="Delete"},4000);return}
+  try{await db("DELETE","/ads?id=eq."+id);if(state.currentAd===id)state.currentAd=null;toast("Deleted");loadLibrary()}catch(e){toast(e.message)}}
+function openAd(id){const r=(state.library||[]).find(x=>x.id===id);if(!r)return;const P=r.product||{};
+  $("#pname").value=P.name||"";$("#price").value=P.price||"";$("#brandName").value=P.brand||"";$("#desc").value=P.desc||"";if(P.url)$("#url").value=P.url;
+  const p={name:P.name||"Your product",price:P.price||"",brand:P.brand||"Your business",desc:P.desc||"",tone:P.tone||"friendly",audience:P.audience||""};
+  const ai=r.copy&&r.copy.ads?r.copy:null;const useTwin=!!(r.spoken||r.video_id)&&state.twin.ready;
+  state.currentAd=r.id;show("create");render(p,useTwin,ai,{spoken:r.spoken,videoId:r.video_id});toast("Opened saved ads")}
 async function aiCopy(p,useTwin,name){
   let image=null;
   if(state.photoFile&&state.photoFile.size<4e6)image=await new Promise(res=>{const r=new FileReader();r.onload=()=>res(r.result);r.readAsDataURL(state.photoFile)});
@@ -357,7 +442,7 @@ $("#adForm").onsubmit=e=>{
   $("#results").innerHTML=`<div class="panel loading">${steps.map((s,i)=>`<div class="ln" id="ln${i}">○ ${s}</div>`).join("")}</div>`;
   $("#genBtn").setAttribute("disabled","");
   const tick=i=>{const l=$("#ln"+i);if(l){l.textContent="✓ "+steps[i];l.classList.add("done")}};
-  const finish=(ai,note)=>{steps.forEach((s,i)=>tick(i));render(p,useTwin,ai);$("#genBtn").removeAttribute("disabled");toast(note)};
+  const finish=(ai,note)=>{steps.forEach((s,i)=>tick(i));state.currentAd=null;state.pendingEdit=false;render(p,useTwin,ai);saveBatch(p,ai,$("#spokenEdit")?.value||"");$("#genBtn").removeAttribute("disabled");toast(note)};
   tick(0);
   const t=setInterval(()=>{for(let i=1;i<steps.length-1;i++){const l=$("#ln"+i);if(l&&!l.classList.contains("done")){tick(i);break}}},2500);
   aiCopy(p,useTwin,state.twin.name).then(ai=>{clearInterval(t);
@@ -371,14 +456,15 @@ $("#adForm").onsubmit=e=>{
 
 function avatarHTML(cls){const t=state.twin;return t.photo?`<img src="${t.photo}" alt="">`:esc((t.name||"?")[0].toUpperCase())}
 
-function render(p,useTwin,ai){
+function render(p,useTwin,ai,saved){
+  saved=saved||{};
   const tpl=copyFor(p),initial=esc(p.brand[0]);
   const ads=ai?ai.ads.slice(0,3).map((a,i)=>({headline:a.headline||tpl[i].headline,text:a.text||tpl[i].text,cta:a.cta||tpl[i].cta,hue:tpl[i].hue})):tpl;
   const vid=ai?.video||{};
   const sc=Array.isArray(vid.script)&&vid.script.length?vid.script.map(s=>[s.t||"",s.line||""]):scriptFor(p,useTwin?state.twin.name:"Presenter");
   const vHead=vid.headline||ads[1].headline, vCap=vid.caption||sc[1][1].replace(/"/g,"");
   const budget=ai?.budget||"Suggested budget $10/day for 7 days";
-  state.lastAds={p,ads};
+  state.lastAds={p,ads,ai};
   let html=`<div class="sizebar"><span class="hint">Image size</span><div class="chips" id="sizeChips"><button type="button" class="chip" aria-pressed="${state.adSize!=="story"}" data-v="feed">Feed 4:5</button><button type="button" class="chip" aria-pressed="${state.adSize==="story"}" data-v="story">Story 9:16</button></div><span class="hint">Click any headline or ad text to edit it. The images update as you type.</span></div><div class="ads">`;
   ads.forEach((a,i)=>{
     html+=`<article class="phone">
@@ -406,11 +492,12 @@ function render(p,useTwin,ai){
   document.querySelectorAll("#results canvas:not(.adimg)").forEach(c=>drawPattern(c,+c.dataset.h,+c.dataset.s));
   drawAllAds();
   document.querySelectorAll("#sizeChips .chip").forEach(c=>c.onclick=()=>{state.adSize=c.dataset.v;document.querySelectorAll("#sizeChips .chip").forEach(x=>x.setAttribute("aria-pressed",x===c));drawAllAds()});
-  document.querySelectorAll("#results [data-f]").forEach(el=>{let t;el.addEventListener("input",()=>{const i=+el.dataset.i,f=el.dataset.f,v=(el.value??el.textContent).trim();state.lastAds.ads[i][f]=v;if(f==="headline"){const card=el.closest(".phone");card.querySelector(".hl").textContent=v;clearTimeout(t);t=setTimeout(()=>drawAd(card.querySelector("canvas.adimg"),i),250)}})});
-  if(useTwin){const spoken=(vid.spoken||sc.map(x=>x[1]).join(" ")).replace(/[\[\]"“”]/g,"").trim();const box=$("#twinVid");
+  document.querySelectorAll("#results [data-f]").forEach(el=>{let t;el.addEventListener("input",()=>{const i=+el.dataset.i,f=el.dataset.f,v=(el.value??el.textContent).trim();state.lastAds.ads[i][f]=v;saveEdits();if(f==="headline"){const card=el.closest(".phone");card.querySelector(".hl").textContent=v;clearTimeout(t);t=setTimeout(()=>drawAd(card.querySelector("canvas.adimg"),i),250)}})});
+  if(useTwin){const spoken=(saved.spoken||vid.spoken||sc.map(x=>x[1]).join(" ")).replace(/[\[\]"“”]/g,"").trim();const box=$("#twinVid");
     box.innerHTML=`<label for="spokenEdit">Twin script. Check and edit it before rendering.</label><textarea id="spokenEdit" rows="6">${esc(spoken)}</textarea><div class="renderbar"><span class="hint" id="spokenEst"></span><button type="button" class="btn" id="renderBtn">Render twin video</button></div><div id="twinResult"></div>`;
     const ta=$("#spokenEdit");const est=()=>{const w=ta.value.trim().split(/\s+/).filter(Boolean).length,sec=Math.round(w/2.5),rate={avatar_iii:0.6,avatar_iv:4.83,avatar_v:7.2}[$("#engineSel").value]||0.6;$("#spokenEst").textContent=`${w} words · about ${sec}s · about US$${(sec/60*rate).toFixed(2)} on your HeyGen balance`};
-    ta.oninput=est;$("#engineSel").onchange=est;est();
+    ta.oninput=()=>{est();saveEdits()};$("#engineSel").onchange=est;est();
+    if(saved.videoId)showSavedVideo(saved.videoId,$("#twinResult"));
     $("#renderBtn").onclick=async()=>{const s=ta.value.trim();if(!s){toast("Add a script first");return}if(s.length>1500){toast("Script is too long. Keep it under 1,500 characters.");return}const b=$("#renderBtn");b.setAttribute("disabled","");b.textContent="Rendering…";await renderTwinVideo(s,$("#twinResult"));b.removeAttribute("disabled");b.textContent="Render again"}}
   document.querySelectorAll(".adactions button").forEach(b=>b.onclick=()=>{
     const a=b.dataset.act;
@@ -480,7 +567,7 @@ async function loadTwin(){
     const looks=(await api("/api/video",{action:"looks"})).data||[];
     const voices=(await api("/api/video",{action:"voices"})).data||[];
     const ready=looks.filter(l=>l.status==="completed");
-    if(!ready.length){$("#twinPill").className="pill warn";$("#twinPill").textContent="Not ready";$("#twinTitle").textContent="No finished twin yet";$("#twinMsg").textContent="Create or finish your twin in HeyGen, then reload this page.";return}
+    if(!ready.length){state.twin.ready=false;$("#useTwin").checked=false;$("#twinPill").className="pill idle";$("#twinPill").textContent="Not set up";$("#twinTitle").textContent="No twin on your account yet";$("#twinMsg").textContent="Recording your own twin inside AdTwin is coming soon. Image ads and Claude copy work now.";$("#twinTag").textContent="not set up";return}
     $("#lookSel").innerHTML=ready.map(l=>`<option value="${esc(l.id)}" data-voice="${esc(l.default_voice_id||"")}" data-img="${esc(l.preview_image_url||"")}">${esc(l.name)} (${esc(l.avatar_type.replace("_"," "))})</option>`).join("");
     $("#voiceSel").innerHTML=voices.map(v=>`<option value="${esc(v.voice_id)}">${esc(v.name)} · ${esc(v.mode||"")}</option>`).join("");
     const pickLook=()=>{const o=$("#lookSel").selectedOptions[0];state.twin.look=o.value;if(o.dataset.voice){$("#voiceSel").value=o.dataset.voice}state.twin.voice=$("#voiceSel").value;
@@ -493,11 +580,18 @@ async function loadTwin(){
     $("#twinTag").textContent="ready";$("#twinHint").textContent="(ready)";$("#useTwin").checked=true;
   }catch(e){$("#twinPill").className="pill warn";$("#twinPill").textContent="Error";$("#twinTitle").textContent="Couldn't reach HeyGen";$("#twinMsg").textContent=e.message}
 }
+async function showSavedVideo(id,box){box.innerHTML=`<div class="rendering">Loading your saved twin video…</div>`;
+  try{const st=(await api("/api/video",{action:"status",video_id:id})).data||{};
+    if(st.status==="completed"){box.innerHTML=`<video controls playsinline src="${esc(st.video_url)}" poster="${esc(st.thumbnail_url||"")}"></video><a class="dl" href="${esc(st.video_url)}" target="_blank" rel="noopener">Open video file</a>`}
+    else if(st.status==="failed")box.innerHTML=`<div class="rendering err">This video failed to render. Edit the script and render again.</div>`;
+    else box.innerHTML=`<div class="rendering">This video is still rendering. Open it again in a few minutes.</div>`}
+  catch(e){box.innerHTML=`<div class="rendering err">Couldn't load the saved video: ${esc(e.message)}</div>`}}
 async function renderTwinVideo(script,box){
   box.innerHTML=`<div class="rendering">Rendering your twin… usually 2–5 minutes.</div>`;
   try{
     const g=await api("/api/video",{action:"generate",avatar_id:state.twin.look,voice_id:state.twin.voice,script,engine:$("#engineSel").value,aspect_ratio:"9:16",title:"AdTwin ad"});
     const id=g?.data?.video_id;if(!id)throw new Error("HeyGen did not return a video id");
+    if(state.currentAd)db("PATCH","/ads?id=eq."+state.currentAd,{video_id:id,video_engine:$("#engineSel").value,spoken:script}).then(loadLibrary).catch(()=>{});
     const t0=Date.now();
     while(Date.now()-t0<15*60e3){
       await new Promise(r=>setTimeout(r,8000));
@@ -509,8 +603,8 @@ async function renderTwinVideo(script,box){
     throw new Error("Still rendering after 15 minutes. Check your HeyGen videos page.");
   }catch(e){box.innerHTML=`<div class="rendering err">Video failed: ${esc(e.message)}</div>`}
 }
-$("#lockForm").onsubmit=e=>{e.preventDefault();const c=$("#lockCode").value.trim();if(!c){$("#lockMsg").textContent="Enter your access code.";return}setCode(c);$("#lock").hidden=true;loadTwin()};
-if(getCode())loadTwin();else showLock("");
+try{localStorage.removeItem("adtwin-code")}catch(e){}
+if(auth.session){afterLogin()}else{setMode("in");showLock("")}
 document.addEventListener("keydown",e=>{if((e.metaKey||e.ctrlKey)&&["1","2","3"].includes(e.key)){e.preventDefault();show(views[+e.key-1])}});
 </script>
 </html>
