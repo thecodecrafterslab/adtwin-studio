@@ -166,7 +166,7 @@ canvas.adimg{width:100%;height:auto;border-radius:14px;display:block;background:
     <button data-view="twin">My twin <span class="tag" id="twinTag">not set up</span></button>
     <button data-view="campaigns">Campaigns <span class="tag">⌘3</span></button>
     <button data-view="build">Build plan <span class="tag">dev</span></button>
-    <p class="rail-note"><span class="pill good">Live</span><br><br>Claude writes the copy and script. Your HeyGen twin renders the video. Image creatives and Meta launch are still mock-ups.</p>
+    <p class="rail-note"><span class="pill good">Live</span><br><br>Claude writes the copy and script. Your digital twin presents the video. Image creatives and Meta launch are still mock-ups.</p>
   </nav>
 
   <main>
@@ -325,8 +325,8 @@ canvas.adimg{width:100%;height:auto;border-radius:14px;display:block;background:
         <div class="panel"><span class="pill idle">Fetch</span><h3>Product scraping</h3><p>Firecrawl or a scraper reads title, price, photos from the link.</p></div>
         <div class="panel"><span class="pill good">Live</span><h3>Ad copy and scripts</h3><p>Claude writes headlines, primary text and video scripts per tone and audience, and reads the product photo if you add one.</p></div>
         <div class="panel"><span class="pill idle">Images</span><h3>Image creatives</h3><p>An image model via fal.ai or Replicate restyles the product photo into ad scenes.</p></div>
-        <div class="panel"><span class="pill good">Live</span><h3>Digital twin video</h3><p>Your HeyGen twin renders the script through the Supabase backend. Your own engine on RunPod can replace it later.</p></div>
-        <div class="panel"><span class="pill idle">Voice</span><h3>Voice clone</h3><p>Included with HeyGen/Tavus, or ElevenLabs for extra languages like Fijian or Hindi.</p></div>
+        <div class="panel"><span class="pill good">Live</span><h3>Digital twin video</h3><p>Your twin presents the script, rendered by AdTwin's video engine.</p></div>
+        <div class="panel"><span class="pill idle">Voice</span><h3>Voice clone</h3><p>Cloned from your twin recording. More languages are coming.</p></div>
         <div class="panel"><span class="pill idle">Launch</span><h3>Campaigns</h3><p>Meta Marketing API creates the campaign and pulls results. Needs Meta app review.</p></div>
         <div class="panel"><span class="pill idle">Data</span><h3>Accounts and credits</h3><p>Supabase for sign-in, projects, twin IDs and the credit ledger.</p></div>
         <div class="panel"><span class="pill idle">Pay</span><h3>Subscriptions</h3><p>RevenueCat for the iOS and Android plans, Stripe on the web.</p></div>
@@ -557,7 +557,7 @@ function render(p,useTwin,ai,saved){
   document.querySelectorAll("#results [data-f]").forEach(el=>{let t;el.addEventListener("input",()=>{const i=+el.dataset.i,f=el.dataset.f,v=(el.value??el.textContent).trim();state.lastAds.ads[i][f]=v;saveEdits();if(f==="headline"){const card=el.closest(".phone");card.querySelector(".hl").textContent=v;clearTimeout(t);t=setTimeout(()=>drawAd(card.querySelector("canvas.adimg"),i),250)}})});
   if(useTwin){const spoken=(saved.spoken||vid.spoken||sc.map(x=>x[1]).join(" ")).replace(/[\[\]"“”]/g,"").trim();const box=$("#twinVid");
     box.innerHTML=`<label for="spokenEdit">Twin script. Check and edit it before rendering.</label><textarea id="spokenEdit" rows="6">${esc(spoken)}</textarea><div class="renderbar"><span class="hint" id="spokenEst"></span><button type="button" class="btn" id="renderBtn">Render twin video</button></div><div id="twinResult"></div>`;
-    const ta=$("#spokenEdit");const est=()=>{const w=ta.value.trim().split(/\s+/).filter(Boolean).length,sec=Math.round(w/2.5),rate={avatar_iii:0.6,avatar_iv:4.83,avatar_v:7.2}[$("#engineSel").value]||0.6;$("#spokenEst").textContent=`${w} words · about ${sec}s · about US$${(sec/60*rate).toFixed(2)} on your HeyGen balance`};
+    const ta=$("#spokenEdit");const est=()=>{const w=ta.value.trim().split(/\s+/).filter(Boolean).length,sec=Math.round(w/2.5),rate={avatar_iii:0.6,avatar_iv:4.83,avatar_v:7.2}[$("#engineSel").value]||0.6;$("#spokenEst").textContent=`${w} words · about ${sec}s · about US$${(sec/60*rate).toFixed(2)} of video time`};
     ta.oninput=()=>{est();saveEdits()};$("#engineSel").onchange=est;est();
     if(saved.videoId)showSavedVideo(saved.videoId,$("#twinResult"));
     $("#renderBtn").onclick=async()=>{const s=ta.value.trim();if(!s){toast("Add a script first");return}if(s.length>1500){toast("Script is too long. Keep it under 1,500 characters.");return}const b=$("#renderBtn");b.setAttribute("disabled","");b.textContent="Rendering…";await renderTwinVideo(s,$("#twinResult"));b.removeAttribute("disabled");b.textContent="Render again"}}
@@ -623,7 +623,7 @@ function downloadAd(cv){if(!cv)return;const slug=(state.lastAds?.p?.name||"ad").
   cv.toBlob(b=>{if(!b){toast("Couldn't create the image");return}const a=document.createElement("a");a.href=URL.createObjectURL(b);a.download=`adtwin-${slug}-${+cv.dataset.i+1}-${state.adSize==="story"?"story":"feed"}.png`;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},2000);toast("PNG downloaded")},"image/png")}
 function addCamp(name){const tr=document.createElement("tr");tr.innerHTML=`<td>${esc(name)}</td><td><span class="pill idle">Draft</span></td><td>$10</td><td>—</td><td>—</td><td>—</td>`;$("#campRows").prepend(tr)}
 
-// twin (real, from HeyGen)
+// twin (video engine via backend)
 async function loadTwin(){
   try{
     const looks=(await api("/api/video",{action:"looks"})).data||[];
@@ -652,7 +652,7 @@ async function renderTwinVideo(script,box){
   box.innerHTML=`<div class="rendering">Rendering your twin… usually 2–5 minutes.</div>`;
   try{
     const g=await api("/api/video",{action:"generate",avatar_id:state.twin.look,voice_id:state.twin.voice,script,engine:$("#engineSel").value,aspect_ratio:"9:16",title:"AdTwin ad"});
-    const id=g?.data?.video_id;if(!id)throw new Error("HeyGen did not return a video id");
+    const id=g?.data?.video_id;if(!id)throw new Error("The video engine didn't start the render. Try again.");
     if(state.currentAd)db("PATCH","/ads?id=eq."+state.currentAd,{video_id:id,video_engine:$("#engineSel").value,spoken:script}).then(loadLibrary).catch(()=>{});
     const t0=Date.now();
     while(Date.now()-t0<15*60e3){
@@ -662,7 +662,7 @@ async function renderTwinVideo(script,box){
       if(st.status==="failed")throw new Error(st.failure_message||"Render failed");
       box.querySelector(".rendering").textContent=`Rendering your twin… ${Math.round((Date.now()-t0)/1000)}s`;
     }
-    throw new Error("Still rendering after 15 minutes. Check your HeyGen videos page.");
+    throw new Error("Still rendering after 15 minutes. Open this ad from My ads later to see it.");
   }catch(e){box.innerHTML=`<div class="rendering err">Video failed: ${esc(e.message)}</div>`}
 }
 // Create your twin: record or upload footage, send it to the backend, then the person confirms consent on camera.
