@@ -109,6 +109,21 @@ textarea{min-height:76px;resize:vertical}
 .pill.good{background:color-mix(in srgb,var(--good) 18%,transparent);color:var(--good)}
 .pill.warn{background:color-mix(in srgb,var(--warn) 18%,transparent);color:var(--warn)}
 .pill.idle{background:var(--line);color:var(--muted)}
+.twinsteps{margin:10px 0 0;padding-left:20px;display:grid;gap:6px;font-size:14px;max-width:65ch}
+.recwrap{position:relative;margin-top:12px;border-radius:12px;overflow:hidden;background:#000;aspect-ratio:16/9;max-width:560px}
+.recwrap video,#takeVid{width:100%;height:100%;object-fit:cover;display:block}
+#takeVid{max-width:560px;border-radius:12px;background:#000;aspect-ratio:16/9;height:auto}
+.recbadge{position:absolute;top:10px;left:10px;background:#c62828;color:#fff;font:700 12px var(--mono);padding:4px 8px;border-radius:6px}
+.prompter{margin-top:12px;background:var(--sea-soft);border-radius:10px;padding:10px 14px;max-width:65ch}
+.prompter summary{cursor:pointer;font-weight:700;color:var(--sea)}
+.prompter p{font-size:16px;line-height:1.6;margin:10px 0 0}
+.upbar{height:8px;border-radius:99px;background:var(--line);overflow:hidden;margin-top:12px;max-width:560px}
+.upbar div{height:100%;width:0;background:var(--sea);transition:width .2s}
+.mytwin{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-top:12px;padding:12px;border:1px solid var(--line);border-radius:12px}
+.mytwin .tav{width:52px;height:52px;border-radius:50%;background:var(--sea-soft);overflow:hidden;flex:none;display:grid;place-items:center;font-weight:800;color:var(--sea)}
+.mytwin .tav img{width:100%;height:100%;object-fit:cover}
+.mytwin .tinfo{flex:1;min-width:180px}
+.mytwin .tbtns{display:flex;gap:6px;flex-wrap:wrap}
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px}
 .kpi{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px}
 .kpi small{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.06em}
@@ -200,16 +215,17 @@ canvas.adimg{width:100%;height:auto;border-radius:14px;display:block;background:
     <!-- TWIN -->
     <section class="view" id="view-twin" hidden>
       <h1>Your digital twin</h1>
-      <p class="lede">Your twin is trained in your HeyGen account. Pick the look and voice AdTwin should use, and how much to spend per video.</p>
+      <p class="lede">Record about two minutes of yourself talking, and AdTwin trains a twin that looks and sounds like you. Then pick the look, voice and video quality for your ads.</p>
       <div class="panel" id="twinStatus">
         <div class="twincard">
           <div class="bigav" id="bigav">?</div>
           <div style="min-width:0;flex:1">
             <span class="pill idle" id="twinPill">Connecting</span>
             <h2 style="margin-top:8px" id="twinTitle">Looking for your twin…</h2>
-            <p class="hint" id="twinMsg">Checking your HeyGen account.</p>
+            <p class="hint" id="twinMsg">Checking your account.</p>
           </div>
         </div>
+        <div id="twinPick">
         <div class="row" style="margin-top:16px">
           <div><label for="lookSel">Look</label><select id="lookSel"></select></div>
           <div><label for="voiceSel">Voice</label><select id="voiceSel"></select></div>
@@ -219,9 +235,58 @@ canvas.adimg{width:100%;height:auto;border-radius:14px;display:block;background:
             <option value="avatar_v">Best · about US$7.20 per minute</option>
           </select></div>
         </div>
-        <p class="hint">A 20-second ad costs about US$0.20 on Economy or US$1.60 on Standard. Charged to your HeyGen API balance.</p>
+        <p class="hint">A 20-second ad uses about US$0.20 of video time on Economy or US$1.60 on Standard.</p>
+        </div>
       </div>
-      <div class="consent"><strong>Consent rule</strong> Only clone yourself, or someone who has recorded HeyGen's consent statement. AdTwin uses the twin in your own business ads only.</div>
+      <div id="myTwins"></div>
+
+      <div class="panel" id="makeTwin" style="margin-top:16px">
+        <h2>Create your twin</h2>
+        <ol class="twinsteps">
+          <li><b>Record</b> about 2 minutes of yourself talking to camera (15 seconds minimum).</li>
+          <li><b>Confirm it's you</b> by reading a short consent statement on camera. This stops anyone cloning someone else.</li>
+          <li><b>Wait</b> a few minutes while your twin trains. Your voice is cloned from the same recording.</li>
+        </ol>
+        <div class="row" style="margin-top:14px">
+          <div style="flex:1;min-width:200px"><label for="newTwinName">Twin name</label><input type="text" id="newTwinName" maxlength="40" placeholder="e.g. Nigel, office look"></div>
+        </div>
+        <div class="authtabs" style="margin-top:14px" role="tablist">
+          <button type="button" class="chip" id="srcCam" aria-pressed="true">Record with camera</button>
+          <button type="button" class="chip" id="srcFile" aria-pressed="false">Upload a video</button>
+        </div>
+        <div id="camBox">
+          <div class="recwrap"><video id="camVid" playsinline muted></video><div class="recbadge" id="recBadge" hidden>● REC <span id="recTime">0:00</span></div></div>
+          <details class="prompter" open><summary>Read this aloud while recording</summary>
+            <p>Hi, I'm recording this so I can make video ads with my own digital twin. I'm going to talk for about two minutes, looking straight at the camera, speaking clearly at my normal pace.</p>
+            <p>Let me tell you a little about what I do. I run a business, and every day I help customers find what they need. I like keeping things simple and honest, and I always try to answer questions the way I'd want someone to answer mine.</p>
+            <p>When people ask me what makes a good product, I tell them it's the one that solves a real problem without fuss. It should be easy to use, it should last, and it should be worth what you paid for it.</p>
+            <p>Some days are busy and some are quiet, but I enjoy all of it. I like meeting new people, hearing their stories, and finding the right fit for them. If you've got a question, just ask, and I'll do my best to help.</p>
+            <p>Thanks for watching. I'm looking forward to sharing more with you soon.</p>
+          </details>
+          <p class="hint">Tips: face a window or lamp, keep your whole face in frame, only you in shot, quiet room. Pause for a second with your mouth closed before you start.</p>
+          <div class="row" style="margin-top:10px">
+            <button type="button" class="btn ghost" id="camOn">Turn on camera</button>
+            <button type="button" class="btn" id="recBtn" hidden>Start recording</button>
+          </div>
+        </div>
+        <div id="fileBox" hidden>
+          <label for="twinFile">Video file (MP4 or WebM, 15 seconds to 10 minutes, under 48 MB)</label>
+          <input type="file" id="twinFile" accept="video/mp4,video/webm">
+          <p class="hint">iPhone videos: in Settings › Camera › Formats choose "Most Compatible" so they save as MP4, or record with the camera option above.</p>
+        </div>
+        <div id="takeBox" hidden style="margin-top:14px">
+          <video id="takeVid" controls playsinline></video>
+          <p class="hint" id="takeInfo"></p>
+          <label class="toggle" for="twinOk"><input type="checkbox" id="twinOk"> <span>This is me, and I agree to AdTwin creating a digital twin of my face and voice for my own ads.</span></label>
+          <div class="row" style="margin-top:12px">
+            <button type="button" class="btn" id="twinGo" disabled>Create my twin</button>
+            <button type="button" class="btn ghost" id="twinRedo">Record again</button>
+          </div>
+          <div class="upbar" id="upBar" hidden><div id="upFill"></div></div>
+          <p class="hint" id="upMsg"></p>
+        </div>
+      </div>
+      <div class="consent"><strong>Consent rule</strong> Only create a twin of yourself. Every twin needs the person to confirm on camera before it can make videos. AdTwin uses the twin in your own ads only.</div>
     </section>
 
     <!-- CAMPAIGNS -->
@@ -347,7 +412,7 @@ function logout(silent){const s=auth.session;Object.assign(auth,{session:"",jwt:
   $("#acctEmail").textContent="Not logged in";$("#logoutBtn").hidden=true;state.twin.ready=false;if(!silent)toast("Logged out");setMode("in");showLock(silent?"Your session has ended. Please log in again.":"")}
 $("#logoutBtn").onclick=()=>logout(false);
 function afterLogin(){$("#acctEmail").textContent=auth.user?.email||"Logged in";$("#logoutBtn").hidden=false;
-  if(auth.user?.name&&$("#twinName"))$("#twinName").value=auth.user.name;state.twin.name=(auth.user?.name||"").split(" ")[0]||"You";loadTwin();loadLibrary()}
+  if(auth.user?.name&&$("#twinName"))$("#twinName").value=auth.user.name;state.twin.name=(auth.user?.name||"").split(" ")[0]||"You";loadTwin();loadMyTwins();loadLibrary()}
 
 // ---- Saved ads ----
 async function saveBatch(p,ai,spoken){
@@ -564,18 +629,18 @@ async function loadTwin(){
     const looks=(await api("/api/video",{action:"looks"})).data||[];
     const voices=(await api("/api/video",{action:"voices"})).data||[];
     const ready=looks.filter(l=>l.status==="completed");
-    if(!ready.length){state.twin.ready=false;$("#useTwin").checked=false;$("#twinPill").className="pill idle";$("#twinPill").textContent="Not set up";$("#twinTitle").textContent="No twin on your account yet";$("#twinMsg").textContent="Recording your own twin inside AdTwin is coming soon. Image ads and Claude copy work now.";$("#twinTag").textContent="not set up";return}
-    $("#lookSel").innerHTML=ready.map(l=>`<option value="${esc(l.id)}" data-voice="${esc(l.default_voice_id||"")}" data-img="${esc(l.preview_image_url||"")}">${esc(l.name)} (${esc(l.avatar_type.replace("_"," "))})</option>`).join("");
-    $("#voiceSel").innerHTML=voices.map(v=>`<option value="${esc(v.voice_id)}">${esc(v.name)} · ${esc(v.mode||"")}</option>`).join("");
+    if(!ready.length){state.twin.ready=false;$("#useTwin").checked=false;$("#twinPill").className="pill idle";$("#twinPill").textContent="Not set up";$("#twinTitle").textContent="No twin on your account yet";$("#twinMsg").textContent="Create one below. Image ads and Claude copy work without a twin.";$("#twinTag").textContent="not set up";$("#twinPick").hidden=true;return}
+    $("#lookSel").innerHTML=ready.map(l=>`<option value="${esc(l.id)}" data-voice="${esc(l.default_voice_id||"")}" data-img="${esc(l.preview_image_url||"")}">${esc(l.name)} (${esc(String(l.avatar_type||"twin").replace("_"," "))})</option>`).join("");
+    $("#voiceSel").innerHTML=voices.map(v=>`<option value="${esc(v.voice_id)}">${esc(v.name)}${v.mode?" · "+esc(v.mode):""}</option>`).join("");
     const pickLook=()=>{const o=$("#lookSel").selectedOptions[0];state.twin.look=o.value;if(o.dataset.voice){$("#voiceSel").value=o.dataset.voice}state.twin.voice=$("#voiceSel").value;
-      state.twin.photo=o.dataset.img||null;$("#bigav").innerHTML=state.twin.photo?`<img src="${state.twin.photo}" alt="">`:"N"};
+      state.twin.photo=o.dataset.img||null;$("#bigav").innerHTML=state.twin.photo?`<img src="${state.twin.photo}" alt="">`:esc((o.textContent||"?")[0])};
     $("#lookSel").onchange=pickLook;$("#voiceSel").onchange=()=>state.twin.voice=$("#voiceSel").value;
     pickLook();
-    state.twin.ready=true;state.twin.name=$("#twinName")?.value||"Nigel";
+    $("#twinPick").hidden=false;state.twin.ready=true;state.twin.name=(auth.user?.name||$("#twinName")?.value||"").split(" ")[0]||"me";
     $("#twinPill").className="pill good";$("#twinPill").textContent="Ready";$("#twinTitle").textContent="Twin connected";
-    $("#twinMsg").textContent=`${ready.length} look${ready.length>1?"s":""} and ${voices.length} voice${voices.length!==1?"s":""} found in HeyGen.`;
+    $("#twinMsg").textContent=`${ready.length} look${ready.length>1?"s":""} and ${voices.length} voice${voices.length!==1?"s":""} ready to use.`;
     $("#twinTag").textContent="ready";$("#twinHint").textContent="(ready)";$("#useTwin").checked=true;
-  }catch(e){$("#twinPill").className="pill warn";$("#twinPill").textContent="Error";$("#twinTitle").textContent="Couldn't reach HeyGen";$("#twinMsg").textContent=e.message}
+  }catch(e){$("#twinPill").className="pill warn";$("#twinPill").textContent="Error";$("#twinTitle").textContent="Couldn't load your twin";$("#twinMsg").textContent=e.message}
 }
 async function showSavedVideo(id,box){box.innerHTML=`<div class="rendering">Loading your saved twin video…</div>`;
   try{const st=(await api("/api/video",{action:"status",video_id:id})).data||{};
@@ -600,6 +665,82 @@ async function renderTwinVideo(script,box){
     throw new Error("Still rendering after 15 minutes. Check your HeyGen videos page.");
   }catch(e){box.innerHTML=`<div class="rendering err">Video failed: ${esc(e.message)}</div>`}
 }
+// Create your twin: record or upload footage, send it to the backend, then the person confirms consent on camera.
+const tw={stream:null,rec:null,chunks:[],blob:null,timer:null,t0:0,poll:null};
+function twinSrc(cam){$("#srcCam").setAttribute("aria-pressed",cam);$("#srcFile").setAttribute("aria-pressed",!cam);$("#camBox").hidden=!cam;$("#fileBox").hidden=cam;if(!cam)stopCam()}
+$("#srcCam").onclick=()=>twinSrc(true);$("#srcFile").onclick=()=>twinSrc(false);
+function stopCam(){if(tw.stream){tw.stream.getTracks().forEach(t=>t.stop());tw.stream=null}$("#camVid").srcObject=null;$("#recBtn").hidden=true;$("#camOn").hidden=false}
+$("#camOn").onclick=async()=>{
+  try{tw.stream=await navigator.mediaDevices.getUserMedia({video:{width:{ideal:1280},height:{ideal:720},facingMode:"user"},audio:{echoCancellation:true,noiseSuppression:true}});
+    const v=$("#camVid");v.srcObject=tw.stream;v.play();$("#camOn").hidden=true;$("#recBtn").hidden=false}
+  catch(e){toast(e.name==="NotAllowedError"?"Camera blocked. Allow camera and microphone for this site, or upload a video instead.":"No camera found. Upload a video instead.")}};
+const fmt=s=>`${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,"0")}`;
+$("#recBtn").onclick=()=>{
+  if(tw.rec&&tw.rec.state==="recording"){tw.rec.stop();return}
+  const mime=["video/mp4;codecs=avc1,mp4a","video/mp4","video/webm;codecs=vp9,opus","video/webm;codecs=vp8,opus","video/webm"].find(m=>window.MediaRecorder&&MediaRecorder.isTypeSupported(m));
+  if(!mime){toast("This browser can't record video. Upload a video instead.");return}
+  tw.chunks=[];tw.rec=new MediaRecorder(tw.stream,{mimeType:mime,videoBitsPerSecond:2_000_000,audioBitsPerSecond:128_000});
+  tw.rec.ondataavailable=e=>{if(e.data.size)tw.chunks.push(e.data)};
+  tw.rec.onstop=()=>{clearInterval(tw.timer);$("#recBadge").hidden=true;$("#recBtn").textContent="Start recording";
+    const secs=(Date.now()-tw.t0)/1000;useTake(new Blob(tw.chunks,{type:mime.split(";")[0]}),secs);stopCam()};
+  tw.rec.start(1000);tw.t0=Date.now();$("#recBadge").hidden=false;$("#recBtn").textContent="Stop recording";
+  tw.timer=setInterval(()=>{const s=(Date.now()-tw.t0)/1000;$("#recTime").textContent=fmt(s);if(s>=180)tw.rec.stop()},500)};
+$("#twinFile").onchange=e=>{const f=e.target.files[0];if(!f)return;
+  if(!/^video\/(mp4|webm)$/.test(f.type)){toast("Use an MP4 or WebM video");e.target.value="";return}
+  const v=document.createElement("video");v.preload="metadata";v.onloadedmetadata=()=>{useTake(f,v.duration);URL.revokeObjectURL(v.src)};v.onerror=()=>useTake(f,0);v.src=URL.createObjectURL(f)};
+function useTake(blob,secs){tw.blob=blob;const tv=$("#takeVid");if(tv.src)URL.revokeObjectURL(tv.src);tv.src=URL.createObjectURL(blob);$("#takeBox").hidden=false;
+  const mb=blob.size/1048576;let warn="";
+  if(secs&&secs<15)warn=" Too short: record at least 15 seconds, ideally 2 minutes.";else if(secs&&secs<60)warn=" That works, but about 2 minutes gives a more natural twin.";
+  if(mb>48)warn=" Over 48 MB: record a shorter take or upload a smaller file.";
+  $("#takeInfo").textContent=`${secs?fmt(secs)+" · ":""}${mb.toFixed(1)} MB.${warn}`;
+  tw.bad=(secs&&secs<15)||mb>48;$("#twinOk").checked=false;$("#twinGo").disabled=true;$("#upMsg").textContent="";$("#upBar").hidden=true;
+  $("#takeBox").scrollIntoView({behavior:"smooth",block:"nearest"})}
+$("#twinOk").onchange=()=>$("#twinGo").disabled=!$("#twinOk").checked||tw.bad;
+$("#twinRedo").onclick=()=>{$("#takeBox").hidden=true;tw.blob=null;$("#twinFile").value="";if(!$("#camBox").hidden)$("#camOn").click()};
+$("#twinGo").onclick=async()=>{
+  if(!tw.blob)return;$("#twinGo").disabled=true;$("#twinRedo").disabled=true;$("#upBar").hidden=false;$("#upMsg").textContent="Uploading your recording…";
+  const name=($("#newTwinName").value.trim()||(auth.user?.name||"My twin").split(" ")[0]);
+  try{const token=await freshJwt();
+    const d=await new Promise((res,rej)=>{const x=new XMLHttpRequest();x.open("POST",FN+"?action=twin_upload");
+      x.setRequestHeader("apikey",ANON);x.setRequestHeader("Authorization","Bearer "+ANON);x.setRequestHeader("x-adtwin-token",token);
+      x.setRequestHeader("x-twin-name",encodeURIComponent(name));x.setRequestHeader("Content-Type",tw.blob.type||"video/webm");
+      x.upload.onprogress=e=>{if(e.lengthComputable){const p=e.loaded/e.total*100;$("#upFill").style.width=p+"%";if(p>=99.5)$("#upMsg").textContent="Starting training…"}};
+      x.onload=()=>{let j={};try{j=JSON.parse(x.responseText)}catch(e){}x.status<300?res(j):rej(new Error(j.error||("Upload failed ("+x.status+")")))};
+      x.onerror=()=>rej(new Error("Upload interrupted. Check your connection and try again."));x.send(tw.blob)});
+    toast("Uploaded. Now tap “Confirm it's me”");
+    $("#takeBox").hidden=true;tw.blob=null;$("#newTwinName").value="";
+    await loadMyTwins();$("#myTwins").scrollIntoView({behavior:"smooth",block:"start"});
+  }catch(e){$("#upMsg").textContent=e.message;toast(e.message)}
+  finally{$("#twinRedo").disabled=false;$("#twinGo").disabled=!$("#twinOk").checked}};
+async function openConsent(gid){
+  const w=window.open("about:blank","_blank");
+  try{const d=await api("/api/video",{action:"twin_consent",group_id:gid});
+    if(w){w.location.href=d.url}else{location.href=d.url}}
+  catch(e){if(w)w.close();toast(e.message)}}
+const READY_C=/^(accepted|approved|completed)$/i;
+function twinState(t){
+  if(t.training==="failed")return{pill:"warn",label:"Failed",msg:t.error||"Training failed. Try a clearer recording with only your face in shot."};
+  if(/rejected|failed/i.test(t.consent))return{pill:"warn",label:"Consent rejected",msg:"The consent recording didn't match. Record it again.",consent:true};
+  if(!READY_C.test(t.consent))return{pill:"idle",label:t.training==="completed"?"Needs consent":"Training · needs consent",msg:"Read the consent statement on camera to switch your twin on. The link opens a secure recording page.",consent:true};
+  if(t.training!=="completed")return{pill:"idle",label:"Training",msg:"Consent received. Training usually takes a few minutes."};
+  return{pill:"good",label:"Ready",msg:"Ready to present your video ads."}}
+async function loadMyTwins(){
+  let list=[];try{list=(await api("/api/video",{action:"twin_list"})).data||[]}catch(e){$("#myTwins").innerHTML=`<p class="hint">Couldn't load your twins: ${esc(e.message)}</p>`;return}
+  clearTimeout(tw.poll);
+  if(!list.length){$("#myTwins").innerHTML="";return}
+  $("#myTwins").innerHTML=`<div class="panel" style="margin-top:16px"><h2>Twins you've made</h2>${list.map(t=>{const s=twinState(t);return `<div class="mytwin">
+    <div class="tav">${t.preview?`<img src="${esc(t.preview)}" alt="">`:esc((t.name||"?")[0])}</div>
+    <div class="tinfo"><span class="pill ${s.pill}">${esc(s.label)}</span><div style="font-weight:700;margin-top:4px">${esc(t.name)}</div><p class="hint">${esc(s.msg)}</p></div>
+    <div class="tbtns">${s.consent?`<button type="button" class="btn small" data-consent="${esc(t.group_id)}">Confirm it's me</button>`:""}<button type="button" class="btn ghost small" data-deltwin="${esc(t.group_id)}">Delete</button></div></div>`}).join("")}</div>`;
+  $("#myTwins").querySelectorAll("[data-consent]").forEach(b=>b.onclick=()=>openConsent(b.dataset.consent));
+  $("#myTwins").querySelectorAll("[data-deltwin]").forEach(b=>b.onclick=async()=>{
+    if(b.dataset.sure!=="1"){b.dataset.sure="1";b.textContent="Tap again to delete";setTimeout(()=>{b.dataset.sure="";b.textContent="Delete"},4000);return}
+    b.disabled=true;try{await api("/api/video",{action:"twin_delete",group_id:b.dataset.deltwin});toast("Twin deleted");loadMyTwins();loadTwin()}catch(e){toast(e.message);b.disabled=false}});
+  const pending=list.some(t=>t.training!=="failed"&&twinState(t).label!=="Ready");
+  const nReady=list.filter(t=>twinState(t).label==="Ready").length;
+  if(tw.ready!==undefined&&nReady>tw.ready){loadTwin();toast("Your twin is ready")}tw.ready=nReady;
+  if(pending)tw.poll=setTimeout(loadMyTwins,20000)}
+if(new URLSearchParams(location.search).get("twin")==="consented"){history.replaceState(null,"",location.pathname);setTimeout(()=>{toast("Thanks. Checking your consent…");show("twin")},400)}
 try{localStorage.removeItem("adtwin-code")}catch(e){}
 if(auth.session){afterLogin()}else{setMode("in");showLock("")}
 document.addEventListener("keydown",e=>{if((e.metaKey||e.ctrlKey)&&["1","2","3"].includes(e.key)){e.preventDefault();show(views[+e.key-1])}});
