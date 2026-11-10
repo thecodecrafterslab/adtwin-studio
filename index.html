@@ -123,6 +123,7 @@ th{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05
 canvas.adimg{width:100%;height:auto;border-radius:14px;display:block;background:var(--line)}.sizebar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:12px}.photoprev img{margin-top:8px;max-height:110px;border-radius:10px;border:1px solid var(--line)}
 .hledit{width:100%;font:700 15px var(--display);color:var(--ink);background:transparent;border:1px dashed var(--line);border-radius:8px;padding:7px 9px;margin-top:8px}.copy[contenteditable]{border-radius:6px;outline:1px dashed transparent;outline-offset:2px}.copy[contenteditable]:hover,.copy[contenteditable]:focus{outline-color:var(--sea)}#spokenEdit{min-height:120px;margin-top:4px}.renderbar{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-top:8px}#twinResult{margin-top:8px}
 .acct{display:flex;gap:8px;align-items:center;min-width:0}.acct .credits{max-width:46vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.btn.small{padding:6px 11px;font-size:13px}.authtabs{display:flex;gap:6px;margin-bottom:12px}.libgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}.libcard{display:flex;flex-direction:column;gap:6px}.libtop{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}.libheads{margin:4px 0;padding-left:18px;font-size:13.5px}.libfoot{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:auto;flex-wrap:wrap}.libbtns{display:flex;gap:6px}
+.onscreen{font-size:12.5px;color:var(--muted);margin-top:2px}
 .toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:10px;font-weight:600;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:20}
 .toast.show{opacity:1}
 .roadmap{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
@@ -184,12 +185,8 @@ canvas.adimg{width:100%;height:auto;border-radius:14px;display:block;background:
             <button type="button" class="chip" aria-pressed="false" data-v="urgent">Limited offer</button>
           </div>
           <label for="audience">Audience</label>
-          <select id="audience">
-            <option>Boat owners and fishermen, Fiji</option>
-            <option>Small businesses, Suva and Nadi</option>
-            <option>Families, 25–55, Fiji</option>
-            <option>Custom audience…</option>
-          </select>
+          <input type="text" id="audience" list="audienceIdeas" placeholder="e.g. Women 25–45 who run, Sydney. Leave blank and Claude suggests one" autocomplete="off">
+          <datalist id="audienceIdeas"><option value="Boat owners and fishermen, Fiji"><option value="Small business owners, Australia"><option value="Parents 25–45, United States"><option value="Gym-goers 18–35, United Kingdom"></datalist>
           <label class="toggle" for="useTwin"><input type="checkbox" id="useTwin"> <span>Present the video ad with my digital twin <span class="hint" id="twinHint">(set up in My twin)</span></span></label>
           <button type="submit" class="btn full" id="genBtn">Generate ads</button>
         </form>
@@ -461,7 +458,7 @@ function render(p,useTwin,ai,saved){
   const tpl=copyFor(p),initial=esc(p.brand[0]);
   const ads=ai?ai.ads.slice(0,3).map((a,i)=>({headline:a.headline||tpl[i].headline,text:a.text||tpl[i].text,cta:a.cta||tpl[i].cta,hue:tpl[i].hue})):tpl;
   const vid=ai?.video||{};
-  const sc=Array.isArray(vid.script)&&vid.script.length?vid.script.map(s=>[s.t||"",s.line||""]):scriptFor(p,useTwin?state.twin.name:"Presenter");
+  const sc=Array.isArray(vid.script)&&vid.script.length?vid.script.map(s=>[s.t||"",s.line||"",s.visual||""]):scriptFor(p,useTwin?state.twin.name:"Presenter");
   const vHead=vid.headline||ads[1].headline, vCap=vid.caption||sc[1][1].replace(/"/g,"");
   const budget=ai?.budget||"Suggested budget $10/day for 7 days";
   state.lastAds={p,ads,ai};
@@ -486,8 +483,8 @@ function render(p,useTwin,ai,saved){
       <div class="cta"><span>${useTwin?esc(state.twin.name)+"'s twin":"Stock presenter"}</span><b>Send message</b></div>
       <div class="adactions"><button data-act="edit">Edit script</button><button data-act="save">Save</button><button data-act="launch">Copy for Meta</button></div>
     </article></div>
-    <div class="panel script"><h2>Video script</h2><ol>${sc.map(s=>`<li><span>${s[0]}</span>${esc(s[1])}</li>`).join("")}</ol>
-    <p class="hint">Targeting: ${esc(p.audience)} · ${esc(budget)}${ai?" · Copy by Claude":" · Template copy"}</p></div>`;
+    <div class="panel script"><h2>Video script</h2><ol>${sc.map(s=>`<li><span>${s[0]}</span>${esc(s[1])}${s[2]?`<div class="onscreen">On screen: ${esc(s[2])}</div>`:""}</li>`).join("")}</ol>
+    <p class="hint">Targeting: ${esc(ai?.audience||p.audience||"Choose an audience in Meta Ads Manager")} · ${esc(budget)}${ai?" · Copy by Claude":" · Template copy"}</p></div>`;
   $("#results").innerHTML=html;
   document.querySelectorAll("#results canvas:not(.adimg)").forEach(c=>drawPattern(c,+c.dataset.h,+c.dataset.s));
   drawAllAds();
