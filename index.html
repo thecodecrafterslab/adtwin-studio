@@ -358,10 +358,11 @@ canvas.adimg{width:100%;height:auto;border-radius:14px;display:block;background:
     <label class="plan"><input type="radio" name="plan" value="pro"><span class="pname">Pro</span><span class="pprice">US$79<small>/month</small></span><span class="pfeat">60 video credits a month<br>Your own twin included, extra twins US$5<br>Ad copy and image ads</span></label>
     <p class="hint">Twin video credits: Economy 1, Standard 8, Best 10 per video. Top-ups: 15 credits for US$10. No cut of your ad spend. Card payments open soon: paid plans start on Free until then, and we'll keep your choice.</p>
   </fieldset>
-  <label class="toggle" id="termsRow" for="authTerms" hidden><input type="checkbox" id="authTerms"> <span>I'll only create a twin of myself, or of someone who has recorded their own consent.</span></label>
+  <label class="toggle" id="termsRow" for="authTerms" hidden><input type="checkbox" id="authTerms"> <span>I agree to the <a href="terms.html" target="_blank" style="color:var(--sea)">Terms</a> and <a href="privacy.html" target="_blank" style="color:var(--sea)">Privacy Policy</a>, and I'll only create a twin of myself.</span></label>
   <p class="hint" id="authMsg" style="color:var(--warn)"></p>
   <button class="btn full" type="submit" id="authBtn">Log in</button>
 </form></div>
+<footer style="max-width:1180px;margin:32px auto 0;font-size:13px;color:var(--muted)">© 2026 Code Crafters Lab Limited · <a href="privacy.html" style="color:var(--sea)">Privacy</a> · <a href="terms.html" style="color:var(--sea)">Terms</a> · support@thecodecrafterslab.com</footer>
 
 <script>
 const $=s=>document.querySelector(s);
@@ -418,7 +419,7 @@ $("#tabIn").onclick=()=>setMode("in");$("#tabUp").onclick=()=>setMode("up");
 $("#authForm").onsubmit=async e=>{e.preventDefault();const up=authMode==="up";const email=$("#authEmail").value.trim(),password=$("#authPass").value;
   if(!email||!password){$("#authMsg").textContent="Enter your email and password.";return}
   if(up&&password.length<8){$("#authMsg").textContent="Use a password of at least 8 characters.";return}
-  if(up&&!$("#authTerms").checked){$("#authMsg").textContent="Tick the twin consent box to continue.";return}
+  if(up&&!$("#authTerms").checked){$("#authMsg").textContent="Tick the box to accept the Terms to continue.";return}
   const b=$("#authBtn");b.setAttribute("disabled","");b.textContent=up?"Creating account…":"Logging in…";
   try{const {r,d}=await call({action:up?"signup":"signin",email,password,name:$("#authName").value.trim()});
     if(!r.ok)throw new Error(d.error||"Couldn't log in.");
