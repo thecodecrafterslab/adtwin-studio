@@ -134,6 +134,7 @@ th,td{text-align:left;padding:11px 10px;border-bottom:1px solid var(--line);whit
 th{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
 .ex{font:500 11px var(--mono);color:var(--warn);margin-left:8px}
 .twinvid{margin-top:8px}.twinvid video{width:100%;max-width:100%;border-radius:12px;background:#000;display:block}.rendering{font:500 13px var(--mono);color:var(--muted);padding:12px;border:1px dashed var(--line);border-radius:10px}.rendering.err{color:var(--warn)}.dl{display:inline-block;margin-top:6px;font-size:12.5px;color:var(--sea)}
+.lfgrid{display:grid;grid-template-columns:200px 1fr;gap:16px}.lfgrid label{display:block;margin:10px 0 4px;font-size:13px;font-weight:600}.lfprev img,.lfprev video{width:100%;border-radius:10px;display:block}.lfrow{display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px}@media(max-width:640px){.lfgrid{grid-template-columns:1fr}.lfprev{max-width:180px}}.metarow{display:flex;flex-wrap:wrap;gap:12px;align-items:end}.metarow>div{flex:1 1 220px}.metarow label{display:block;font-size:13px;font-weight:600;margin-bottom:4px}.btn.small{padding:6px 12px;font-size:13px}
 .lock{position:fixed;inset:0;background:color-mix(in srgb,var(--bg) 85%,transparent);display:flex;z-index:30;padding:16px;overflow-y:auto}.lockbox{width:min(380px,100%);box-sizing:border-box;margin:auto}.lockbox.wide{width:min(760px,100%)}
 .plans{border:0;padding:0;margin:14px 0 0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.plans legend{font-weight:700;font-size:13px;margin-bottom:8px;padding:0}
 .plans .hint{grid-column:1/-1;margin:0}
@@ -176,7 +177,7 @@ canvas.adimg{width:100%;height:auto;border-radius:14px;display:block;background:
     <button data-view="twin">My twin <span class="tag" id="twinTag">not set up</span></button>
     <button data-view="campaigns">Campaigns <span class="tag">⌘3</span></button>
     <button data-view="build">Build plan <span class="tag">dev</span></button>
-    <p class="rail-note"><span class="pill good">Live</span><br><br>Claude writes the copy and script. Your digital twin presents the video. Image creatives and Meta launch are still mock-ups.</p>
+    <p class="rail-note"><span class="pill good">Live</span><br><br>Claude writes the copy and script. Your digital twin presents the video. Launch ads straight to your own Facebook &amp; Instagram ad account.</p>
   </nav>
 
   <main>
@@ -308,21 +309,17 @@ canvas.adimg{width:100%;height:auto;border-radius:14px;display:block;background:
 
     <section class="view" id="view-campaigns" hidden>
       <h1>Campaigns</h1>
-      <p class="lede">Ads you copied for Meta are listed as drafts. Post them in <a href="https://adsmanager.facebook.com/" target="_blank" rel="noopener" style="color:var(--sea)">Meta Ads Manager</a>. One-click launch is coming once Meta approves the app. <span class="ex">EXAMPLE RESULTS BELOW</span></p>
-      <div class="kpis">
-        <div class="kpi"><small>Spend, 7 days</small><div>$184</div></div>
-        <div class="kpi"><small>Link clicks</small><div>1,326</div></div>
-        <div class="kpi"><small>Cost per click</small><div>$0.14</div></div>
-        <div class="kpi"><small>Enquiries</small><div>37</div></div>
+      <p class="lede">Connect your own Facebook ad account, then launch any ad from the Create ad tab with one click. You pay Meta directly for ad spend; AdTwin takes no cut.</p>
+      <div class="panel" id="metaPanel">
+        <h2 style="margin-top:0">Facebook &amp; Instagram</h2>
+        <div id="metaBody"><p class="hint">Checking your connection…</p></div>
       </div>
-      <div class="panel">
+      <div class="kpis" id="campKpis" hidden></div>
+      <div class="panel" id="campPanel" hidden>
+        <h2 style="margin-top:0">Your AdTwin campaigns <span class="hint">· last 7 days</span></h2>
         <div class="tablewrap"><table>
-          <thead><tr><th>Ad</th><th>Status</th><th>Budget/day</th><th>Clicks</th><th>CTR</th><th>Enquiries</th></tr></thead>
-          <tbody id="campRows">
-            <tr><td>Twin video · "Built in Lami"</td><td><span class="pill good">Live</span></td><td>$12</td><td>742</td><td>3.9%</td><td>21</td></tr>
-            <tr><td>Image · Rust-proof</td><td><span class="pill good">Live</span></td><td>$8</td><td>401</td><td>2.6%</td><td>11</td></tr>
-            <tr><td>Image · Weekend offer</td><td><span class="pill warn">Learning</span></td><td>$6</td><td>183</td><td>1.8%</td><td>5</td></tr>
-          </tbody>
+          <thead><tr><th>Campaign</th><th>Status</th><th>Budget/day</th><th>Spend</th><th>Clicks</th><th>CTR</th><th></th></tr></thead>
+          <tbody id="campRows"></tbody>
         </table></div>
       </div>
     </section>
@@ -337,7 +334,7 @@ canvas.adimg{width:100%;height:auto;border-radius:14px;display:block;background:
         <div class="panel"><span class="pill idle">Images</span><h3>Image creatives</h3><p>An image model via fal.ai or Replicate restyles the product photo into ad scenes.</p></div>
         <div class="panel"><span class="pill good">Live</span><h3>Digital twin video</h3><p>Your twin presents the script, rendered by AdTwin's video engine.</p></div>
         <div class="panel"><span class="pill idle">Voice</span><h3>Voice clone</h3><p>Cloned from your twin recording. More languages are coming.</p></div>
-        <div class="panel"><span class="pill idle">Launch</span><h3>Campaigns</h3><p>Meta Marketing API creates the campaign and pulls results. Needs Meta app review.</p></div>
+        <div class="panel"><span class="pill idle">Launch</span><h3>Campaigns</h3><p>Meta Marketing API creates the campaign in the customer's own ad account and pulls results.</p></div>
         <div class="panel"><span class="pill idle">Data</span><h3>Accounts and credits</h3><p>Supabase for sign-in, projects, twin IDs and the credit ledger.</p></div>
         <div class="panel"><span class="pill idle">Pay</span><h3>Subscriptions</h3><p>RevenueCat for the iOS and Android plans, Stripe on the web.</p></div>
       </div>
@@ -345,6 +342,26 @@ canvas.adimg{width:100%;height:auto;border-radius:14px;display:block;background:
   </main>
 </div>
 <div class="toast" id="toast" role="status"></div>
+<div class="lock" id="launchLock" hidden><form class="panel lockbox wide" id="launchForm" novalidate>
+  <h2 style="margin-top:0">Launch on Facebook &amp; Instagram</h2>
+  <p class="hint" id="lfWhere"></p>
+  <div class="lfgrid">
+    <div class="lfprev" id="lfPrev"></div>
+    <div>
+      <label for="lfHead">Headline</label><input type="text" id="lfHead" maxlength="255">
+      <label for="lfText">Primary text</label><textarea id="lfText" rows="3" maxlength="2000"></textarea>
+      <label for="lfLink">Link people go to</label><input type="url" id="lfLink" placeholder="https://">
+      <label for="lfCta">Button</label><select id="lfCta"><option>Shop now</option><option>Learn more</option><option>Send message</option><option>Get offer</option></select>
+      <div class="lfrow"><div><label for="lfBudget">Daily budget (<span id="lfCur">USD</span>)</label><input type="number" id="lfBudget" min="1" step="1" value="10"></div>
+        <div><label for="lfAgeMin">Age from</label><input type="number" id="lfAgeMin" min="18" max="65" value="18"></div>
+        <div><label for="lfAgeMax">to</label><input type="number" id="lfAgeMax" min="18" max="65" value="65"></div></div>
+      <label for="lfCountries">Countries (2-letter codes, comma separated)</label><input type="text" id="lfCountries" value="US">
+      <label class="toggle" for="lfStart"><input type="checkbox" id="lfStart"> <span>Start spending now. Leave unticked to create it paused so you can review it in Ads Manager first.</span></label>
+    </div>
+  </div>
+  <p class="hint" id="lfMsg" style="color:var(--warn)"></p>
+  <div class="renderbar"><button type="button" class="btn ghost" id="lfCancel">Cancel</button><button type="submit" class="btn" id="lfGo">Create campaign</button></div>
+</form></div>
 <div class="lock" id="lock" hidden><form class="panel lockbox" id="authForm" novalidate>
   <div class="authtabs" role="tablist"><button type="button" role="tab" class="chip" id="tabIn" aria-pressed="true">Log in</button><button type="button" role="tab" class="chip" id="tabUp" aria-pressed="false">Create account</button></div>
   <h2 id="authTitle">Log in to AdTwin Studio</h2>
@@ -383,7 +400,7 @@ function readImg(file,cb){if(!file)return;const r=new FileReader();r.onload=()=>
 $("#photo").onchange=e=>{state.photoFile=e.target.files[0]||null;readImg(e.target.files[0],d=>{state.photo=d;$("#photoPrev").innerHTML=`<img src="${d}" alt="">`;toast("Photo added")})};
 
 // API helpers. Logins come from Neon Auth via the backend; ads are stored in Neon (row-level security per user).
-const FN="https://bblsdugfoccfrbmcjvow.supabase.co/functions/v1/adtwin-api";
+const FN="https://br-small-night-a10aqywd-adtwinapi.compute.c-1.ap-southeast-1.aws.neon.tech/";
 const ANON="sb_publishable_KLhLXAiFY2spzDHa7Y8oug_o9k9dda9";
 const DATA="https://ep-curly-smoke-a1bezxvs.apirest.ap-southeast-1.aws.neon.tech/neondb/rest/v1";
 const auth={session:"",jwt:"",user:null};
@@ -557,7 +574,7 @@ function render(p,useTwin,ai,saved){
       <div class="copy" contenteditable="true" spellcheck="true" data-i="${i}" data-f="text" title="Click to edit">${esc(a.text)}</div>
       <canvas class="adimg" data-i="${i}" aria-label="Ad image: ${esc(a.headline)}"></canvas><div class="hl" hidden>${esc(a.headline)}</div><input class="hledit" data-i="${i}" data-f="headline" value="${esc(a.headline)}" aria-label="Headline for ad ${i+1}" title="Edit the headline">
       <div class="cta"><span>${esc(p.name)}</span><b>${a.cta}</b></div>
-      <div class="adactions"><button data-act="png">Download PNG</button><button data-act="launch">Copy for Meta</button></div>
+      <div class="adactions"><button data-act="png">Download PNG</button><button data-act="meta" data-i="${i}">Launch on Meta</button><button data-act="launch">Copy text</button></div>
     </article>`;
   });
   html+=`<article class="phone">
@@ -569,7 +586,7 @@ function render(p,useTwin,ai,saved){
         <div class="hl">${esc(vHead)}</div></div>
       ${useTwin?'<div class="twinvid" id="twinVid"></div>':""}
       <div class="cta"><span>${useTwin?esc(state.twin.name)+"'s twin":"Stock presenter"}</span><b>Send message</b></div>
-      <div class="adactions"><button data-act="edit">Edit script</button><button data-act="save">Save</button><button data-act="launch">Copy for Meta</button></div>
+      <div class="adactions"><button data-act="edit">Edit script</button><button data-act="meta" data-i="video">Launch on Meta</button><button data-act="launch">Copy text</button></div>
     </article></div>
     <div class="panel script"><h2>Video script</h2><ol>${sc.map(s=>`<li><span>${s[0]}</span>${esc(s[1])}${s[2]?`<div class="onscreen">On screen: ${esc(s[2])}</div>`:""}</li>`).join("")}</ol>
     <p class="hint">Targeting: ${esc(ai?.audience||p.audience||"Choose an audience in Meta Ads Manager")} · ${esc(budget)}${ai?" · Copy by Claude":" · Template copy"}</p></div>`;
@@ -587,9 +604,10 @@ function render(p,useTwin,ai,saved){
   document.querySelectorAll(".adactions button").forEach(b=>b.onclick=()=>{
     const a=b.dataset.act;
     if(a==="png"){downloadAd(b.closest(".phone").querySelector("canvas.adimg"));return}
+    if(a==="meta"){openLaunch(b.dataset.i,b.closest(".phone"));return}
     if(a==="save")toast("Saved to library");
     else if(a==="edit"){const ta=$("#spokenEdit");if(ta){ta.focus();ta.scrollIntoView({block:"center"})}else toast("Tick the twin option and generate to get an editable script")}
-    else{const card=b.closest(".phone");const parts=[card.querySelector(".hl")?.textContent,card.querySelector(".copy")?.textContent||card.querySelector(".caption")?.textContent,card.querySelector(".cta b")?.textContent?("Button: "+card.querySelector(".cta b").textContent):""].filter(Boolean);const txt=parts.join("\n\n");const done=()=>{const dl=card.querySelector(".dl");toast(dl?"Text copied. Video opened: save it, then upload in Ads Manager":"Ad text copied. Paste it into Meta Ads Manager");if(dl)window.open(dl.href,"_blank","noopener");addCamp(card.querySelector(".hl").textContent)};navigator.clipboard.writeText(txt).then(done,()=>{prompt("Copy this ad text:",txt);done()})}
+    else{const card=b.closest(".phone");const parts=[card.querySelector(".hl")?.textContent,card.querySelector(".copy")?.textContent||card.querySelector(".caption")?.textContent,card.querySelector(".cta b")?.textContent?("Button: "+card.querySelector(".cta b").textContent):""].filter(Boolean);const txt=parts.join("\n\n");const done=()=>{const dl=card.querySelector(".dl");toast(dl?"Text copied. Video opened: save it, then upload in Ads Manager":"Ad text copied");if(dl)window.open(dl.href,"_blank","noopener")};navigator.clipboard.writeText(txt).then(done,()=>{prompt("Copy this ad text:",txt);done()})}
   });
 }
 
@@ -675,7 +693,7 @@ async function renderTwinVideo(script,box){
   box.innerHTML=`<div class="rendering">Rendering your twin… usually 2–5 minutes.</div>`;
   try{
     const g=await api("/api/video",{action:"generate",avatar_id:state.twin.look,voice_id:state.twin.voice,script,engine:$("#engineSel").value,aspect_ratio:"9:16",title:"AdTwin ad"});
-    const id=g?.data?.video_id;if(!id)throw new Error("The video engine didn't start the render. Try again.");
+    const id=g?.data?.video_id;if(!id)throw new Error("The video engine didn't start the render. Try again.");state.lastVideoId=id;
     if(state.currentAd)db("PATCH","/ads?id=eq."+state.currentAd,{video_id:id,video_engine:$("#engineSel").value,spoken:script}).then(loadLibrary).catch(()=>{});
     const t0=Date.now();
     while(Date.now()-t0<15*60e3){
@@ -763,6 +781,77 @@ async function loadMyTwins(){
   const nReady=list.filter(t=>twinState(t).label==="Ready").length;
   if(tw.ready!==undefined&&nReady>tw.ready){loadTwin();toast("Your twin is ready")}tw.ready=nReady;
   if(pending)tw.poll=setTimeout(loadMyTwins,20000)}
+
+// ---- Meta one-click launch: each customer connects their own ad account (Facebook Login, ads_management). ----
+const meta={status:null};
+const money=(n,cur)=>{try{return new Intl.NumberFormat(undefined,{style:"currency",currency:cur||"USD",maximumFractionDigits:2}).format(n)}catch(e){return (cur||"$")+" "+n}};
+async function loadMeta(){const box=$("#metaBody");
+  try{const d=await api("/api/meta",{action:"meta_status"});meta.status=d;
+    if(!d.ready){box.innerHTML=`<p class="hint">One-click launch is being switched on. Meta is reviewing AdTwin; until then use <b>Copy text</b> and post in <a href="https://adsmanager.facebook.com/" target="_blank" rel="noopener" style="color:var(--sea)">Ads Manager</a>.</p>`;$("#campPanel").hidden=true;$("#campKpis").hidden=true;return}
+    if(!d.connected){box.innerHTML=`<p>Connect the Facebook account that manages your ad account and Page. AdTwin can then create campaigns for you and show their results here.</p><button class="btn" id="fbConnect" type="button">Connect Facebook</button><p class="hint">You choose what to share on Facebook's screen. Disconnect any time.</p>`;$("#fbConnect").onclick=connectMeta;$("#campPanel").hidden=true;$("#campKpis").hidden=true;return}
+    if(d.expired){box.innerHTML=`<p>Your Facebook connection has expired (${esc(d.error||"")}).</p><button class="btn" id="fbConnect" type="button">Reconnect Facebook</button>`;$("#fbConnect").onclick=connectMeta;return}
+    const acc=(d.accounts||[]).map(a=>`<option value="${esc(a.id)}" ${a.id===d.ad_account_id?"selected":""}>${esc(a.name)} · ${esc(a.currency)}${a.account_status!==1?" (not active)":""}</option>`).join("");
+    const pg=(d.pages||[]).map(p=>`<option value="${esc(p.id)}" ${p.id===d.page_id?"selected":""}>${esc(p.name)}</option>`).join("");
+    box.innerHTML=`<p>Connected as <b>${esc(d.fb_name)}</b>.</p><div class="metarow"><div><label for="mAcct">Ad account</label><select id="mAcct">${acc||'<option value="">No ad accounts found</option>'}</select></div><div><label for="mPage">Facebook Page the ads run from</label><select id="mPage">${pg||'<option value="">No Pages found</option>'}</select></div><div style="flex:0 0 auto"><button class="btn ghost" id="fbOff" type="button">Disconnect</button></div></div>${!acc?'<p class="hint">Create an ad account in <a href="https://business.facebook.com/" target="_blank" rel="noopener" style="color:var(--sea)">Meta Business Suite</a>, then reconnect.</p>':""}`;
+    $("#mAcct").onchange=e=>api("/api/meta",{action:"meta_select",ad_account_id:e.target.value}).then(()=>{toast("Ad account saved");loadMeta()}).catch(x=>toast(x.message));
+    $("#mPage").onchange=e=>api("/api/meta",{action:"meta_select",page_id:e.target.value}).then(()=>toast("Page saved")).catch(x=>toast(x.message));
+    $("#fbOff").onclick=async()=>{const b=$("#fbOff");if(b.dataset.c!=="1"){b.dataset.c="1";b.textContent="Disconnect? Click again";setTimeout(()=>{b.dataset.c="";b.textContent="Disconnect"},4000);return}await api("/api/meta",{action:"meta_disconnect"}).catch(()=>{});toast("Facebook disconnected");loadMeta()};
+    loadCampaigns();
+  }catch(e){box.innerHTML=`<p class="hint" style="color:var(--warn)">Couldn't check Facebook: ${esc(e.message)}</p>`}}
+async function connectMeta(){try{const d=await api("/api/meta",{action:"meta_login_url"});location.href=d.url}catch(e){toast(e.message)}}
+async function loadCampaigns(){
+  try{const d=await api("/api/meta",{action:"meta_campaigns"});const rows=d.data||[],cur=d.currency||"USD";
+    $("#campPanel").hidden=false;
+    if(!rows.length){$("#campRows").innerHTML=`<tr><td colspan="7" class="hint">No AdTwin campaigns yet. Make an ad on the Create ad tab and click <b>Launch on Meta</b>.</td></tr>`;$("#campKpis").hidden=true;return}
+    let sp=0,cl=0,im=0;
+    $("#campRows").innerHTML=rows.map(c=>{const i=c.insights?.data?.[0]||{};sp+=+i.spend||0;cl+=+i.clicks||0;im+=+i.impressions||0;const bud=c.adsets?.data?.[0]?.daily_budget;const on=c.status==="ACTIVE";const eff=String(c.effective_status||c.status).replace(/_/g," ").toLowerCase();
+      return `<tr><td>${esc(c.name.replace(/^AdTwin · /,""))}</td><td><span class="pill ${on?"good":"idle"}">${esc(eff)}</span></td><td>${bud?money(bud/100,cur):"—"}</td><td>${i.spend?money(+i.spend,cur):"—"}</td><td>${i.clicks||"—"}</td><td>${i.ctr?(+i.ctr).toFixed(1)+"%":"—"}</td><td><button class="btn ghost small" data-camp="${esc(c.id)}" data-to="${on?"PAUSED":"ACTIVE"}">${on?"Pause":"Start"}</button></td></tr>`}).join("");
+    $("#campKpis").hidden=false;$("#campKpis").innerHTML=`<div class="kpi"><small>Spend, 7 days</small><div>${money(sp,cur)}</div></div><div class="kpi"><small>Link clicks</small><div>${cl.toLocaleString()}</div></div><div class="kpi"><small>Cost per click</small><div>${cl?money(sp/cl,cur):"—"}</div></div><div class="kpi"><small>Impressions</small><div>${im.toLocaleString()}</div></div>`;
+    document.querySelectorAll("[data-camp]").forEach(b=>b.onclick=async()=>{b.setAttribute("disabled","");try{await api("/api/meta",{action:"meta_set_status",campaign_id:b.dataset.camp,status:b.dataset.to});toast(b.dataset.to==="ACTIVE"?"Campaign started":"Campaign paused");loadCampaigns()}catch(e){toast(e.message);b.removeAttribute("disabled")}});
+  }catch(e){$("#campPanel").hidden=false;$("#campRows").innerHTML=`<tr><td colspan="7" class="hint" style="color:var(--warn)">${esc(e.message)}</td></tr>`}}
+let launchCtx=null;
+async function openLaunch(which,card){
+  if(!meta.status)await loadMeta();
+  const st=meta.status||{};
+  if(!st.ready){toast("One-click launch switches on once Meta approves AdTwin. Use Copy text for now.");return}
+  if(!st.connected||st.expired){toast("Connect Facebook first");show("campaigns");return}
+  if(!st.ad_account_id||!st.page_id){toast("Choose an ad account and Page first");show("campaigns");return}
+  const L=state.lastAds;if(!L){toast("Generate ads first");return}
+  const isVid=which==="video";const a=isVid?null:L.ads[+which];
+  let img="",vid="";
+  if(isVid){const v=card.querySelector("video");if(!v){toast("Render the twin video first, then launch it");return}
+    const row=(state.library||[]).find(r=>r.id===state.currentAd);vid=row?.video_id||state.lastVideoId||"";if(!vid&&state.currentAd){try{const r=await db("GET","/ads?select=video_id&id=eq."+state.currentAd);vid=r?.[0]?.video_id||""}catch(e){}}
+    if(!vid){toast("Save the ad with its video first");return}
+    $("#lfPrev").innerHTML=`<video src="${esc(v.src)}" muted playsinline controls></video>`}
+  else{const cv=card.querySelector("canvas.adimg");img=cv.toDataURL("image/jpeg",0.92);$("#lfPrev").innerHTML=`<img src="${img}" alt="">`}
+  launchCtx={img,vid};
+  $("#lfHead").value=isVid?(card.querySelector(".hl")?.textContent||""):a.headline;
+  $("#lfText").value=isVid?($("#spokenEdit")?.value.split(/(?<=[.!?])\s/)[0]||card.querySelector(".caption")?.textContent||""):a.text;
+  $("#lfCta").value=isVid?"Learn more":(a.cta||"Learn more");
+  $("#lfLink").value=$("#url").value.trim();
+  $("#lfCur").textContent=st.currency||"USD";
+  $("#lfWhere").textContent=`Ad account: ${st.ad_account_name||st.ad_account_id} · Page: ${st.page_name||st.page_id}`;
+  $("#lfMsg").textContent="";$("#launchLock").hidden=false;setTimeout(()=>$("#lfLink").focus(),50)}
+$("#lfCancel").onclick=()=>{$("#launchLock").hidden=true};
+$("#launchForm").onsubmit=async e=>{e.preventDefault();const b=$("#lfGo"),msg=$("#lfMsg");msg.textContent="";
+  const link=$("#lfLink").value.trim();if(!/^https?:\/\//.test(link)){msg.textContent="Add the link people should go to (starting with https://).";return}
+  const body={action:"meta_launch",name:$("#lfHead").value.trim()||state.lastAds?.p?.name||"Ad",headline:$("#lfHead").value.trim(),text:$("#lfText").value.trim(),cta:$("#lfCta").value,link,
+    daily_budget:+$("#lfBudget").value,age_min:+$("#lfAgeMin").value,age_max:+$("#lfAgeMax").value,countries:$("#lfCountries").value.split(/[\s,]+/).filter(Boolean),start_now:$("#lfStart").checked};
+  if(launchCtx.vid)body.video_id=launchCtx.vid;else body.image=launchCtx.img;
+  b.setAttribute("disabled","");b.textContent=launchCtx.vid?"Uploading video to Meta… up to 2 min":"Creating campaign…";
+  try{const d=await api("/api/meta",body);
+    if(state.currentAd)db("PATCH","/ads?id=eq."+state.currentAd,{meta_launch:{campaign_id:d.campaign_id,ad_id:d.ad_id,status:d.status,at:new Date().toISOString()}}).catch(()=>{});
+    $("#launchLock").hidden=true;toast(d.status==="ACTIVE"?"Campaign is live on Meta":"Campaign created (paused). Review it in Ads Manager.");
+    show("campaigns");loadMeta();if(d.manage_url)window.open(d.manage_url,"_blank","noopener")}
+  catch(err){msg.textContent=err.message}
+  finally{b.removeAttribute("disabled");b.textContent="Create campaign"}};
+// Back from Facebook Login: ?code=…&state=…
+{const q=new URLSearchParams(location.search);
+  if(q.get("code")&&q.get("state")){history.replaceState(null,"",location.pathname);
+    setTimeout(async()=>{show("campaigns");$("#metaBody").innerHTML='<p class="hint">Finishing the Facebook connection…</p>';
+      try{const d=await api("/api/meta",{action:"meta_connect",code:q.get("code"),state:q.get("state")});toast(`Connected as ${d.name}`)}catch(e){toast(e.message)}loadMeta()},400)}
+  else if(q.get("error")&&q.get("state")){history.replaceState(null,"",location.pathname);setTimeout(()=>{show("campaigns");toast("Facebook connection cancelled")},400)}}
+document.querySelector('nav.rail button[data-view="campaigns"]').addEventListener("click",()=>loadMeta());
 if(new URLSearchParams(location.search).get("twin")==="consented"){history.replaceState(null,"",location.pathname);setTimeout(()=>{toast("Thanks. Checking your consent…");show("twin")},400)}
 try{localStorage.removeItem("adtwin-code")}catch(e){}
 if(auth.session){afterLogin()}else{setMode("in");showLock("")}
